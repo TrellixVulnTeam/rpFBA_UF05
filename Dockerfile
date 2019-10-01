@@ -1,4 +1,4 @@
-FROM ibisba/rpsbml
+FROM brsynth/rpbase
 
 RUN pip install --no-cache-dir cobra
 
