@@ -49,8 +49,9 @@ class rpFBA:
             self.logger.error('Cannot convert the libSBML model to Cobra')
 
 
-    ##
-    #
+    ## TODO: use the objective from the original model (GEM) that contains the biomass function
+    # and return the flux for the biomass reaction. This value will be used to normalise the FBA
+    # score
     #   
     def allObj(self, pathId='rp_pathway'):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
