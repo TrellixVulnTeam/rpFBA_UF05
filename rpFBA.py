@@ -53,18 +53,15 @@ class rpFBA:
     # and return the flux for the biomass reaction. This value will be used to normalise the FBA
     # score
     #   
-    def allObj(self, pathId='rp_pathway'):
+    def allObj(self, path_id='rp_pathway'):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        #print(self.rpsbml.modelName)
-        for objId in [i.getId() for i in fbc_plugin.getListOfObjectives()]:
-            #print('----> '+str(objId))
-            groups = self.rpsbml.model.getPlugin('groups')
-            self._checklibSBML(groups, 'Getting groups plugin')
-            #ADD ANNOTATIONS IN GROUPS
-            #groups_annotations = groups.getAnnotation()
-            rp_pathway = groups.getGroup(pathId)
-            self._checklibSBML(rp_pathway, 'Getting RP pathway')
+        groups = self.rpsbml.model.getPlugin('groups')
+        self._checklibSBML(groups, 'Getting groups plugin')
+        rp_pathway = groups.getGroup(path_id)
+        self._checklibSBML(rp_pathway, 'Getting RP pathway')
+        #for objId in [i.getId() for i in fbc_plugin.getListOfObjectives()]:
+        for fbc_obj in fbc_plugin.getListOfObjectives():
             #find all the species of the reactions in the rp_pathway to return the shadow price
             ''' TO BE DETERMINED IF USED 
             mem = []
@@ -76,22 +73,24 @@ class rpFBA:
                     mem.append(rea.getSpecies())
             '''
             #run the FBA
-            #fbc_plugin = rpsbml.model.getPlugin('fbc')
-            #TODO: switch this to a idependent function and wrap with error handling functions
-            self._checklibSBML(fbc_plugin.setActiveObjectiveId(objId), 'Setting active objective '+str(objId))
+            self._checklibSBML(fbc_plugin.setActiveObjectiveId(fbc_obj.getId()), 'Setting active objective '+str(fbc_obj.getId()))
             self.convertToCobra()
             res = self.cobraModel.optimize()
-            #update the annotations with the reaction flux results
-            #reac.getChild('RDF').getChild('Ibisba').getChild('ibisba').getChild(child).addAttr('value', str(value))
-            #update the annotations with the species shadow prices
+            #add the results of FBA run to the annotation of FBA objective
+            for flux_obj in fbc_obj.getListOfFluxObjectives():
+                obj_annot = fbc_obj.getAnnotation()
+                ibisba_annot = obj_annot.getChild('RDF').getChild('Ibisba').getChild('ibisba')
+                tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<ibisba:ibisba xmlns:ibisba="http://ibisba.eu"> <ibisba:obj units="mmol_per_gDW_per_hr" value="'+str(res.fluxes.get(flux_obj.getReaction()))+'" /> </ibisba:ibisba>')
+                ibisba_annot.addChild(tmpAnnot.getChild('obj'))
+            #add the results of the FBA reactions for each rp_pathway reactions 
+            #NOTE: this should be only for the targetSink
+            #TODO: need to take care of the case where the annotation exists already --> overwrite
             for member in rp_pathway.getListOfMembers():
                 reac = self.rpsbml.model.getReaction(member.getIdRef())
                 reac_annot = reac.getAnnotation()
                 ibisba_annot = reac_annot.getChild('RDF').getChild('Ibisba').getChild('ibisba')
-                #NOTE: for some reaseon one neesds to wrap a child XMLnode into a parent node for it to be valid
-                #here we just pass the child node to be added
-                tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<ibisba:ibisba xmlns:ibisba="http://ibisba.eu"> <ibisba:fba_'+str(objId)+' units="mmol_per_gDW_per_hr" value="'+str(res.fluxes.get(member.getIdRef()))+'" /> </ibisba:ibisba>')
-                ibisba_annot.addChild(tmpAnnot.getChild('fba_'+str(objId)))
+                tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<ibisba:ibisba xmlns:ibisba="http://ibisba.eu"> <ibisba:fba_'+str(fbc_obj.getId())+' units="mmol_per_gDW_per_hr" value="'+str(res.fluxes.get(member.getIdRef()))+'" /> </ibisba:ibisba>')
+                ibisba_annot.addChild(tmpAnnot.getChild('fba_'+str(fbc_obj.getId())))
                 ### if targetSink add it to the annotations of the group as well ##
                 #ADD ANNOTATIONS IN GROUPS
                 #if member.getIdRef()=='targetSink':
