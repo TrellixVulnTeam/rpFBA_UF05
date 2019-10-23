@@ -78,7 +78,7 @@ class rpFBA:
             res = self.cobraModel.optimize()
             #add the results of FBA run to the annotation of FBA objective
             for flux_obj in fbc_obj.getListOfFluxObjectives():
-                obj_annot = fbc_obj.getAnnotation()
+                obj_annot = flux_obj.getAnnotation()
                 ibisba_annot = obj_annot.getChild('RDF').getChild('Ibisba').getChild('ibisba')
                 tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<ibisba:ibisba xmlns:ibisba="http://ibisba.eu"> <ibisba:obj units="mmol_per_gDW_per_hr" value="'+str(res.fluxes.get(flux_obj.getReaction()))+'" /> </ibisba:ibisba>')
                 ibisba_annot.addChild(tmpAnnot.getChild('obj'))
