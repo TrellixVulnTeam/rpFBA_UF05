@@ -2,7 +2,6 @@ import cobra
 import libsbml
 
 import logging
-#import rpSBML
 
 ## Class to simulate an rpsbml object using different FBA types and objective functions
 #

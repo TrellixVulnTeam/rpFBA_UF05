@@ -236,7 +236,6 @@ def runFBA_hdd(inputTar, inModel, outputTar, dontMerge, pathId='rp_pathway'):
 
 app = Flask(__name__)
 api = Api(app)
-#dataFolder = os.path.join( os.path.dirname(__file__),  'data' )
 
 
 def stamp(data, status=1):
