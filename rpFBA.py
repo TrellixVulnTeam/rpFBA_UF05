@@ -189,27 +189,3 @@ class rpFBA:
 
     #11) ECM
 
-#This is to test the good functioing of the main function and make sure that
-#there are no errors
-#TODO: change this to the stepTest
-if __name__ == "__main__":
-    #read the TAR.XZ with all the SBML pathways
-    rpsbml_paths = {}
-    tar = tarfile.open('tests/testFBAin.tar.xz') #TODO: create this
-    rpsbml_paths = {}
-    for member in tar.getmembers():
-        rpsbml_paths[member.name] = rpFBA.rpSBML(member.name,libsbml.readSBMLFromString(tar.extractfile(member).read().decode("utf-8")))
-    #pass the different models to the SBML solvers and write the results to file
-    #rpsbml_paths = readrpSBMLzip(params.inSBMLzip)
-    for rpsbml_name in rpsbml_paths:
-        rpfba = rpFBA.rpFBA(rpsbml_paths[rpsbml_name])
-        rpfba.allObj()
-    #writerpSBMLzip(rpsbml_paths, params.outSBMLzip)
-    #designed to write using TAR.XZ with all the SBML pathways
-    with tarfile.open('testFBAout.tar.xz', 'w:xz') as tf:
-        for rpsbml_name in rpsbml_paths:
-            data = libsbml.writeSBMLToString(rpsbml_paths[rpsbml_name].document).encode('utf-8')
-            fiOut = BytesIO(data)
-            info = tarfile.TarInfo(rpsbml_name)
-            info.size = len(data)
-            tf.addfile(tarinfo=info, fileobj=fiOut)
