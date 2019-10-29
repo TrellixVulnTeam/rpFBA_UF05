@@ -53,18 +53,15 @@ class rpFBA:
     # and return the flux for the biomass reaction. This value will be used to normalise the FBA
     # score
     #   
-    def allObj(self, pathId='rp_pathway'):
+    def allObj(self, path_id='rp_pathway'):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        #print(self.rpsbml.modelName)
-        for objId in [i.getId() for i in fbc_plugin.getListOfObjectives()]:
-            #print('----> '+str(objId))
-            groups = self.rpsbml.model.getPlugin('groups')
-            self._checklibSBML(groups, 'Getting groups plugin')
-            #ADD ANNOTATIONS IN GROUPS
-            #groups_annotations = groups.getAnnotation()
-            rp_pathway = groups.getGroup(pathId)
-            self._checklibSBML(rp_pathway, 'Getting RP pathway')
+        groups = self.rpsbml.model.getPlugin('groups')
+        self._checklibSBML(groups, 'Getting groups plugin')
+        rp_pathway = groups.getGroup(path_id)
+        self._checklibSBML(rp_pathway, 'Getting RP pathway')
+        #for objId in [i.getId() for i in fbc_plugin.getListOfObjectives()]:
+        for fbc_obj in fbc_plugin.getListOfObjectives():
             #find all the species of the reactions in the rp_pathway to return the shadow price
             ''' TO BE DETERMINED IF USED 
             mem = []
@@ -76,26 +73,23 @@ class rpFBA:
                     mem.append(rea.getSpecies())
             '''
             #run the FBA
-            #fbc_plugin = rpsbml.model.getPlugin('fbc')
-            #TODO: switch this to a idependent function and wrap with error handling functions
-            self._checklibSBML(fbc_plugin.setActiveObjectiveId(objId), 'Setting active objective '+str(objId))
+            self._checklibSBML(fbc_plugin.setActiveObjectiveId(fbc_obj.getId()), 'Setting active objective '+str(fbc_obj.getId()))
             self.convertToCobra()
             res = self.cobraModel.optimize()
-            #update the annotations with the reaction flux results
-            #reac.getChild('RDF').getChild('Ibisba').getChild('ibisba').getChild(child).addAttr('value', str(value))
-            #update the annotations with the species shadow prices
+            #add the results of FBA run to the annotation of FBA objective
+            for flux_obj in fbc_obj.getListOfFluxObjectives():
+                obj_annot = flux_obj.getAnnotation()
+                brsynth_annot = obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth')
+                tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<brsynth:brsynth xmlns:brsynth="http://brsynth.eu"> <brsynth:obj units="mmol_per_gDW_per_hr" value="'+str(res.fluxes.get(flux_obj.getReaction()))+'" /> </brsynth:brsynth>')
+                brsynth_annot.addChild(tmpAnnot.getChild('obj'))
+            #add the results of the FBA reactions for each rp_pathway reactions 
+            #TODO: need to take care of the case where the annotation exists already --> overwrite
             for member in rp_pathway.getListOfMembers():
                 reac = self.rpsbml.model.getReaction(member.getIdRef())
                 reac_annot = reac.getAnnotation()
-                ibisba_annot = reac_annot.getChild('RDF').getChild('Ibisba').getChild('ibisba')
-                #NOTE: for some reaseon one neesds to wrap a child XMLnode into a parent node for it to be valid
-                #here we just pass the child node to be added
-                tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<ibisba:ibisba xmlns:ibisba="http://ibisba.eu"> <ibisba:fba_'+str(objId)+' units="mmol_per_gDW_per_hr" value="'+str(res.fluxes.get(member.getIdRef()))+'" /> </ibisba:ibisba>')
-                ibisba_annot.addChild(tmpAnnot.getChild('fba_'+str(objId)))
-                ### if targetSink add it to the annotations of the group as well ##
-                #ADD ANNOTATIONS IN GROUPS
-                #if member.getIdRef()=='targetSink':
-                #    groups_annotations.addChild(tmpAnnot.getChild('fba_'+str(objId)))
+                brsynth_annot = reac_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth')
+                tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<brsynth:brsynth xmlns:brsynth="http://brsynth.eu"> <brsynth:fba_'+str(fbc_obj.getId())+' units="mmol_per_gDW_per_hr" value="'+str(res.fluxes.get(member.getIdRef()))+'" /> </brsynth:brsynth>')
+                brsynth_annot.addChild(tmpAnnot.getChild('fba_'+str(fbc_obj.getId())))
             del res
             ''' TO BE DETERMINED IF USED
             #update the shadow prices for species
@@ -104,9 +98,9 @@ class rpFBA:
                 if len([x for x in speName.split('_') if x])==4:
                     spe = self.rpsbml.model.getSpecies(speName)
                     spe_annot = spe.getAnnotation()
-                    ibisba_annot = spe_annot.getChild('RDF').getChild('Ibisba').getChild('ibisba')
-                    tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<ibisba:ibisba xmlns:ibisba="http://ibisba.eu"> <ibisba:shadow_price_'+str(objId)+' units="mmol_per_gDW_per_hr" value="'+str(res.shadow_prices.get(speName))+'" /> </ibisba:ibisba>')
-                    ibisba_annot.addChild(tmpAnnot.getChild('shadow_price_'+str(objId)))
+                    brsynth_annot = spe_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth')
+                    tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<brsynth:brsynth xmlns:brsynth="http://brsynth.eu"> <brsynth:shadow_price_'+str(objId)+' units="mmol_per_gDW_per_hr" value="'+str(res.shadow_prices.get(speName))+'" /> </brsynth:brsynth>')
+                    brsynth_annot.addChild(tmpAnnot.getChild('shadow_price_'+str(objId)))
             '''
 
 
@@ -156,7 +150,7 @@ class rpFBA:
         self.rpsbml()
         #reaction
         for reac in self.rpsbml.getListOfReactions():
-            reac.getChild('RDF').getChild('Ibisba').getChild('ibisba').getChild(child).addAttr('value', str(value))
+            reac.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(child).addAttr('value', str(value))
         #pathway
 
 
@@ -189,27 +183,3 @@ class rpFBA:
 
     #11) ECM
 
-#This is to test the good functioing of the main function and make sure that
-#there are no errors
-#TODO: change this to the stepTest
-if __name__ == "__main__":
-    #read the TAR.XZ with all the SBML pathways
-    rpsbml_paths = {}
-    tar = tarfile.open('tests/testFBAin.tar.xz') #TODO: create this
-    rpsbml_paths = {}
-    for member in tar.getmembers():
-        rpsbml_paths[member.name] = rpFBA.rpSBML(member.name,libsbml.readSBMLFromString(tar.extractfile(member).read().decode("utf-8")))
-    #pass the different models to the SBML solvers and write the results to file
-    #rpsbml_paths = readrpSBMLzip(params.inSBMLzip)
-    for rpsbml_name in rpsbml_paths:
-        rpfba = rpFBA.rpFBA(rpsbml_paths[rpsbml_name])
-        rpfba.allObj()
-    #writerpSBMLzip(rpsbml_paths, params.outSBMLzip)
-    #designed to write using TAR.XZ with all the SBML pathways
-    with tarfile.open('testFBAout.tar.xz', 'w:xz') as tf:
-        for rpsbml_name in rpsbml_paths:
-            data = libsbml.writeSBMLToString(rpsbml_paths[rpsbml_name].document).encode('utf-8')
-            fiOut = BytesIO(data)
-            info = tarfile.TarInfo(rpsbml_name)
-            info.size = len(data)
-            tf.addfile(tarinfo=info, fileobj=fiOut)
