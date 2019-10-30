@@ -10,6 +10,10 @@ import os
 import io
 #import zipfile
 import tarfile
+import random
+import string
+import glob
+import shutil
 
 import json
 from datetime import datetime
@@ -136,19 +140,20 @@ def processify(func):
 #
 #
 @processify
-def singleFBA_mem(member_name, rpsbml_string, inModel, dontMerge, pathId):
+def singleFBA_mem(member_name, rpsbml_string, inModel_string, dontMerge, pathway_id):
     #open one of the rp SBML files
     rpsbml = rpSBML.rpSBML(member_name, libsbml.readSBMLFromString(rpsbml_string))
     #read the input GEM sbml model
-    input_rpsbml = rpSBML.rpSBML(member_name+'_merged')
-    input_rpsbml.readSBML(inModel)
+    #input_rpsbml = rpSBML.rpSBML(member_name+'_merged')
+    #input_rpsbml.readSBML(inModel)
+    input_rpsbml = rpSBML.rpSBML(fileName+'_merged', libsbml.readSBMLFromString(inModel_string))
     rpsbml.mergeModels(input_rpsbml)
     rpfba = rpFBA.rpFBA(input_rpsbml)
-    rpfba.allObj(pathId)
+    rpfba.allObj(pathway_id)
     if dontMerge:
         ##### pass FBA results to the original model ####
         groups = rpfba.rpsbml.model.getPlugin('groups')
-        rp_pathway = groups.getGroup(pathId)
+        rp_pathway = groups.getGroup(pathway_id)
         for member in rp_pathway.getListOfMembers():
             #### reactions
             reacFBA = rpfba.rpsbml.model.getReaction(member.getIdRef())
@@ -163,13 +168,15 @@ def singleFBA_mem(member_name, rpsbml_string, inModel, dontMerge, pathId):
 ##
 #
 #
-def runFBA_mem(inputTar, inModel, outTar, dontMerge, pathId):
+def runFBA_mem(inputTar, inModel_bytes, outTar, dontMerge, pathway_id):
+    #open the model as a string
+    inModel_string = inModel_bytes.read().decode('utf-8')
     #loop through all of them and run FBA on them
-    with tarfile.open(outTar, 'w:xz') as tf:
-        with tarfile.open(inputTar, 'r:xz') as in_tf:
+    with tarfile.open(fileobj=outTar, mode='w:xz') as tf:
+        with tarfile.open(fileobj=inputTar, mode='r:xz') as in_tf:
             for member in in_tf.getmembers():
                 if not member.name=='':
-                    data = singleFBA_mem(member.name, in_tf.extractfile(member).read().decode("utf-8"), inModel, dontMerge, pathId)
+                    data = singleFBA_mem(member.name, in_tf.extractfile(member).read().decode("utf-8"), inModel_string, dontMerge, pathway_id)
                     fiOut = io.BytesIO(data)
                     info = tarfile.TarInfo(member.name)
                     info.size = len(data)
@@ -182,18 +189,19 @@ def runFBA_mem(inputTar, inModel, outTar, dontMerge, pathId):
 #
 #
 @processify
-def singleFBA_hdd(fileName, sbml_path, inModel, tmpOutputFolder, dontMerge, pathId):
+def singleFBA_hdd(fileName, sbml_path, inModel_string, tmpOutputFolder, dontMerge, pathway_id):
     rpsbml = rpSBML.rpSBML(fileName)
     rpsbml.readSBML(sbml_path)
     #input_rpsbml = rpSBML.rpSBML(sbml_path.split('/')[-1].replace('.sbml', ''), libsbml.readSBMLFromFile(inModel))
-    input_rpsbml = rpSBML.rpSBML(fileName+'_merged')
-    input_rpsbml.readSBML(inModel)
+    #input_rpsbml = rpSBML.rpSBML(fileName+'_merged')
+    #input_rpsbml.readSBML(inModel)
+    input_rpsbml = rpSBML.rpSBML(fileName+'_merged', libsbml.readSBMLFromString(inModel_string))
     rpsbml.mergeModels(input_rpsbml)
     rpfba = rpFBA.rpFBA(input_rpsbml)
-    rpfba.allObj(pathId)
+    rpfba.allObj(pathway_id)
     if dontMerge:
         groups = rpfba.rpsbml.model.getPlugin('groups')
-        rp_pathway = groups.getGroup(pathId)
+        rp_pathway = groups.getGroup(pathway_id)
         for member in rp_pathway.getListOfMembers():
             reacFBA = rpfba.rpsbml.model.getReaction(member.getIdRef())
             reacIN = rpsbml.model.getReaction(member.getIdRef())
@@ -206,20 +214,22 @@ def singleFBA_hdd(fileName, sbml_path, inModel, tmpOutputFolder, dontMerge, path
 ##
 #
 #
-def runFBA_hdd(inputTar, inModel, outputTar, dontMerge, pathId='rp_pathway'):
+def runFBA_hdd(inputTar, inModel_bytes, outputTar, dontMerge, pathway_id='rp_pathway'):
     if not os.path.exists(os.getcwd()+'/tmp'):
         os.mkdir(os.getcwd()+'/tmp')
     tmpInputFolder = os.getcwd()+'/tmp/'+''.join(random.choice(string.ascii_lowercase) for i in range(15))
     tmpOutputFolder = os.getcwd()+'/tmp/'+''.join(random.choice(string.ascii_lowercase) for i in range(15))
     os.mkdir(tmpInputFolder)
     os.mkdir(tmpOutputFolder)
-    tar = tarfile.open(inputTar, 'r:xz')
+    tar = tarfile.open(fileobj=inputTar, mode='r:xz')
     tar.extractall(path=tmpInputFolder)
     tar.close()
+    #open the model as a string
+    inModel_string = inModel_bytes.read().decode('utf-8')
     for sbml_path in glob.glob(tmpInputFolder+'/*'):
         fileName = sbml_path.split('/')[-1].replace('.sbml', '')
-        singleFBA_hdd(fileName, sbml_path, inModel, tmpOutputFolder, dontMerge, pathId)
-    with tarfile.open(outputTar, mode='w:xz') as ot:
+        singleFBA_hdd(fileName, sbml_path, inModel_string, tmpOutputFolder, dontMerge, pathway_id)
+    with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
         for sbml_path in glob.glob(tmpOutputFolder+'/*'):
             fileName = str(sbml_path.split('/')[-1].replace('.sbml', ''))
             info = tarfile.TarInfo(fileName)
@@ -271,7 +281,7 @@ class RestQuery(Resource):
         #### MEM ####
         #runFBA_mem(inputTar, inSBML, outputTar, bool(params['isMerge']), str(params['path_id']))
         #### HDD ####
-        runFBA_hdd(inputTar, inSBML, outputTar, bool(params['isMerge']), str(params['path_id']))
+        runFBA_hdd(inputTar, inSBML, outputTar, bool(params['isMerge']), str(params['pathway_id']))
         ###### IMPORTANT ######
         outputTar.seek(0)
         #######################
