@@ -52,12 +52,12 @@ class rpFBA:
     # and return the flux for the biomass reaction. This value will be used to normalise the FBA
     # score
     #   
-    def allObj(self, path_id='rp_pathway'):
+    def allObj(self, pathway_id='rp_pathway'):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
         groups = self.rpsbml.model.getPlugin('groups')
         self._checklibSBML(groups, 'Getting groups plugin')
-        rp_pathway = groups.getGroup(path_id)
+        rp_pathway = groups.getGroup(pathway_id)
         self._checklibSBML(rp_pathway, 'Getting RP pathway')
         #for objId in [i.getId() for i in fbc_plugin.getListOfObjectives()]:
         for fbc_obj in fbc_plugin.getListOfObjectives():
