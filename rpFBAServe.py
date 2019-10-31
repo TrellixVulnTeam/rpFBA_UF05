@@ -279,9 +279,9 @@ class RestQuery(Resource):
         #pass the files to the rpReader
         outputTar = io.BytesIO()
         #### MEM ####
-        #runFBA_mem(inputTar, inSBML, outputTar, bool(params['isMerge']), str(params['path_id']))
+        #runFBA_mem(inputTar, inSBML, outputTar, bool(params['dontMerge']), str(params['path_id']))
         #### HDD ####
-        runFBA_hdd(inputTar, inSBML, outputTar, bool(params['isMerge']), str(params['pathway_id']))
+        runFBA_hdd(inputTar, inSBML, outputTar, bool(params['dontMerge']), str(params['pathway_id']))
         ###### IMPORTANT ######
         outputTar.seek(0)
         #######################
