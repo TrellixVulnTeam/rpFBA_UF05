@@ -140,14 +140,10 @@ def processify(func):
 #
 #
 @processify
-def singleFBA_mem(member_name, rpsbml_string, inModel_string, dontMerge, pathway_id):
-    #open one of the rp SBML files
+def singleFBA_mem(member_name, rpsbml_string, inModel_string, dontMerge, pathway_id, fillOrphanSpecies, compartment_id):
     rpsbml = rpSBML.rpSBML(member_name, libsbml.readSBMLFromString(rpsbml_string))
-    #read the input GEM sbml model
-    #input_rpsbml = rpSBML.rpSBML(member_name+'_merged')
-    #input_rpsbml.readSBML(inModel)
-    input_rpsbml = rpSBML.rpSBML(fileName+'_merged', libsbml.readSBMLFromString(inModel_string))
-    rpsbml.mergeModels(input_rpsbml)
+    input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
+    rpsbml.mergeModels(input_rpsbml, pathway_id, fillOrphanSpecies, compartment_id)
     rpfba = rpFBA.rpFBA(input_rpsbml)
     rpfba.allObj(pathway_id)
     if dontMerge:
@@ -168,7 +164,7 @@ def singleFBA_mem(member_name, rpsbml_string, inModel_string, dontMerge, pathway
 ##
 #
 #
-def runFBA_mem(inputTar, inModel_bytes, outTar, dontMerge, pathway_id):
+def runFBA_mem(inputTar, inModel_bytes, outTar, dontMerge, pathway_id='rp_pathway', fillOrphanSpecies=False, compartment_id='MNXC3'):
     #open the model as a string
     inModel_string = inModel_bytes.read().decode('utf-8')
     #loop through all of them and run FBA on them
@@ -189,14 +185,18 @@ def runFBA_mem(inputTar, inModel_bytes, outTar, dontMerge, pathway_id):
 #
 #
 @processify
-def singleFBA_hdd(fileName, sbml_path, inModel_string, tmpOutputFolder, dontMerge, pathway_id):
+def singleFBA_hdd(fileName, 
+                  sbml_path, 
+                  inModel_string, 
+                  tmpOutputFolder, 
+                  dontMerge, 
+                  pathway_id, 
+                  fillOrphanSpecies, 
+                  compartment_id):
     rpsbml = rpSBML.rpSBML(fileName)
     rpsbml.readSBML(sbml_path)
-    #input_rpsbml = rpSBML.rpSBML(sbml_path.split('/')[-1].replace('.sbml', ''), libsbml.readSBMLFromFile(inModel))
-    #input_rpsbml = rpSBML.rpSBML(fileName+'_merged')
-    #input_rpsbml.readSBML(inModel)
-    input_rpsbml = rpSBML.rpSBML(fileName+'_merged', libsbml.readSBMLFromString(inModel_string))
-    rpsbml.mergeModels(input_rpsbml)
+    input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
+    rpsbml.mergeModels(input_rpsbml, pathway_id, fillOrphanSpecies, compartment_id)
     rpfba = rpFBA.rpFBA(input_rpsbml)
     rpfba.allObj(pathway_id)
     if dontMerge:
@@ -214,7 +214,13 @@ def singleFBA_hdd(fileName, sbml_path, inModel_string, tmpOutputFolder, dontMerg
 ##
 #
 #
-def runFBA_hdd(inputTar, inModel_bytes, outputTar, dontMerge, pathway_id='rp_pathway'):
+def runFBA_hdd(inputTar, 
+               inModel_bytes, 
+               outputTar, 
+               dontMerge, 
+               pathway_id='rp_pathway', 
+               fillOrphanSpecies=False, 
+               compartment_id='MNXC3'):
     if not os.path.exists(os.getcwd()+'/tmp'):
         os.mkdir(os.getcwd()+'/tmp')
     tmpInputFolder = os.getcwd()+'/tmp/'+''.join(random.choice(string.ascii_lowercase) for i in range(15))
@@ -228,7 +234,14 @@ def runFBA_hdd(inputTar, inModel_bytes, outputTar, dontMerge, pathway_id='rp_pat
     inModel_string = inModel_bytes.read().decode('utf-8')
     for sbml_path in glob.glob(tmpInputFolder+'/*'):
         fileName = sbml_path.split('/')[-1].replace('.sbml', '')
-        singleFBA_hdd(fileName, sbml_path, inModel_string, tmpOutputFolder, dontMerge, pathway_id)
+        singleFBA_hdd(fileName, 
+                      sbml_path, 
+                      inModel_string, 
+                      tmpOutputFolder, 
+                      dontMerge, 
+                      pathway_id, 
+                      fillOrphanSpecies, 
+                      compartment_id)
     with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
         for sbml_path in glob.glob(tmpOutputFolder+'/*'):
             fileName = str(sbml_path.split('/')[-1].replace('.sbml', ''))
@@ -279,9 +292,23 @@ class RestQuery(Resource):
         #pass the files to the rpReader
         outputTar = io.BytesIO()
         #### MEM ####
-        #runFBA_mem(inputTar, inSBML, outputTar, bool(params['dontMerge']), str(params['path_id']))
+        '''
+        runFBA_mem(inputTar, 
+                   inSBML, 
+                   outputTar, 
+                   bool(params['dontMerge']), 
+                   str(params['pathway_id']), 
+                   str(params['fillOrphanSpecies']), 
+                   bool(params['compartment_id']))
+        '''
         #### HDD ####
-        runFBA_hdd(inputTar, inSBML, outputTar, bool(params['dontMerge']), str(params['pathway_id']))
+        runFBA_hdd(inputTar, 
+                   inSBML, 
+                   outputTar, 
+                   bool(params['dontMerge']), 
+                   str(params['pathway_id']), 
+                   str(params['fillOrphanSpecies']), 
+                   bool(params['compartment_id']))
         ###### IMPORTANT ######
         outputTar.seek(0)
         #######################
