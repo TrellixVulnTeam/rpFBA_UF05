@@ -75,12 +75,48 @@ class rpFBA:
             self._checklibSBML(fbc_plugin.setActiveObjectiveId(fbc_obj.getId()), 'Setting active objective '+str(fbc_obj.getId()))
             self.convertToCobra()
             res = self.cobraModel.optimize()
+            #add the objective value to the fbc obj
+            tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<brsynth:brsynth xmlns:brsynth="http://brsynth.eu"> <brsynth:objective_value units="mmol_per_gDW_per_hr" value="'+str(res.objective_value)+'" /> </brsynth:brsynth>')
+            try:
+                obj_annot = fbc_obj.getAnnotation()
+                brsynth_annot = obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth')
+                brsynth_annot.addChild(tmpAnnot.getChild('objective_value'))
+            except AttributeError:
+                annotation = '''<annotation>
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+    <rdf:BRSynth rdf:about="#">
+      <brsynth:brsynth xmlns:brsynth="http://brsynth.eu">
+      </brsynth:brsynth>
+    </rdf:BRSynth>
+  </rdf:RDF>
+</annotation>'''
+                fbc_obj.setAnnotation(annotation)
+                obj_annot = fbc_obj.getAnnotation()
+                brsynth_annot = obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth')
+                brsynth_annot.addChild(tmpAnnot.getChild('objective_value'))
             #add the results of FBA run to the annotation of FBA objective
             for flux_obj in fbc_obj.getListOfFluxObjectives():
-                obj_annot = flux_obj.getAnnotation()
-                brsynth_annot = obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth')
-                tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<brsynth:brsynth xmlns:brsynth="http://brsynth.eu"> <brsynth:obj units="mmol_per_gDW_per_hr" value="'+str(res.fluxes.get(flux_obj.getReaction()))+'" /> </brsynth:brsynth>')
-                brsynth_annot.addChild(tmpAnnot.getChild('obj'))
+                try:
+                    obj_annot = flux_obj.getAnnotation()
+                    brsynth_annot = obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth')
+                    tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<brsynth:brsynth xmlns:brsynth="http://brsynth.eu"> <brsynth:reac_obj_value units="mmol_per_gDW_per_hr" value="'+str(res.fluxes.get(flux_obj.getReaction()))+'" /> </brsynth:brsynth>')
+                    brsynth_annot.addChild(tmpAnnot.getChild('reac_obj_value'))
+                except AttributeError:
+                    annotation = '''<annotation>
+      <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+        <rdf:BRSynth rdf:about="#">
+          <brsynth:brsynth xmlns:brsynth="http://brsynth.eu">
+          </brsynth:brsynth>
+        </rdf:BRSynth>
+      </rdf:RDF>
+    </annotation>'''
+                    flux_obj.setAnnotation(annotation)
+                    obj_annot = flux_obj.getAnnotation()
+                    brsynth_annot = obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth')
+                    tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<brsynth:brsynth xmlns:brsynth="http://brsynth.eu"> <brsynth:reac_obj_value units="mmol_per_gDW_per_hr" value="'+str(res.fluxes.get(flux_obj.getReaction()))+'" /> </brsynth:brsynth>')
+                    brsynth_annot.addChild(tmpAnnot.getChild('reac_obj_value'))
             #add the results of the FBA reactions for each rp_pathway reactions 
             #TODO: need to take care of the case where the annotation exists already --> overwrite
             for member in rp_pathway.getListOfMembers():
@@ -89,7 +125,6 @@ class rpFBA:
                 brsynth_annot = reac_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth')
                 tmpAnnot = libsbml.XMLNode.convertStringToXMLNode('<brsynth:brsynth xmlns:brsynth="http://brsynth.eu"> <brsynth:fba_'+str(fbc_obj.getId())+' units="mmol_per_gDW_per_hr" value="'+str(res.fluxes.get(member.getIdRef()))+'" /> </brsynth:brsynth>')
                 brsynth_annot.addChild(tmpAnnot.getChild('fba_'+str(fbc_obj.getId())))
-            del res
             ''' TO BE DETERMINED IF USED
             #update the shadow prices for species
             for speName in list(set(mem)): #remoce duplicates

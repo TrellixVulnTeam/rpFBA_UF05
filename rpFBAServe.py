@@ -155,7 +155,22 @@ def singleFBA_mem(member_name, rpsbml_string, inModel_string, dontMerge, pathway
             reacFBA = rpfba.rpsbml.model.getReaction(member.getIdRef())
             reacIN = rpsbml.model.getReaction(member.getIdRef())
             reacIN.setAnnotation(reacFBA.getAnnotation())
+            #### species TODO: only for shadow price
         #### species #TODO: implement this for shadow prices
+        #### add objectives ####
+        source_fbc = rpfba.rpsbml.model.getPlugin('fbc')
+        target_fbc = rpsbml.model.getPlugin('fbc')
+        target_objID = [i.getId() for i in target_fbc.getListOfObjectives()]
+        for source_obj in source_fbc.getListOfObjectives():
+            if source_obj.getId() in target_objID:
+                target_obj = target_fbc.getObjective(source_obj.getId())
+                target_obj.setAnnotation(source_obj.getAnnotation())
+                for target_fluxObj in target_obj.getListOfFluxObjectives():
+                    for source_fluxObj in source_obj.getListOfFluxObjectives():
+                        if target_fluxObj.getReaction()==source_fluxObj.getReaction():
+                            target_fluxObj.setAnnotation(source_fluxObj.getAnnotation())
+            else:
+                target_fbc.addObjective(source_obj)
         return libsbml.writeSBMLToString(rpsbml.document).encode('utf-8')
     else:
         return libsbml.writeSBMLToString(input_rpsbml.document).encode('utf-8')
@@ -203,9 +218,26 @@ def singleFBA_hdd(fileName,
         groups = rpfba.rpsbml.model.getPlugin('groups')
         rp_pathway = groups.getGroup(pathway_id)
         for member in rp_pathway.getListOfMembers():
+            #### reaction annotation
             reacFBA = rpfba.rpsbml.model.getReaction(member.getIdRef())
             reacIN = rpsbml.model.getReaction(member.getIdRef())
             reacIN.setAnnotation(reacFBA.getAnnotation())
+            #### species TODO: only for shadow price
+        #### species #TODO: implement this for shadow prices
+        #### add objectives ####
+        source_fbc = rpfba.rpsbml.model.getPlugin('fbc')
+        target_fbc = rpsbml.model.getPlugin('fbc')
+        target_objID = [i.getId() for i in target_fbc.getListOfObjectives()]
+        for source_obj in source_fbc.getListOfObjectives():
+            if source_obj.getId() in target_objID:
+                target_obj = target_fbc.getObjective(source_obj.getId())
+                target_obj.setAnnotation(source_obj.getAnnotation())
+                for target_fluxObj in target_obj.getListOfFluxObjectives():
+                    for source_fluxObj in source_obj.getListOfFluxObjectives():
+                        if target_fluxObj.getReaction()==source_fluxObj.getReaction():
+                            target_fluxObj.setAnnotation(source_fluxObj.getAnnotation())
+            else:
+                target_fbc.addObjective(source_obj)
         rpsbml.writeSBML(tmpOutputFolder)
     else:
         input_rpsbml.writeSBML(tmpOutputFolder)
@@ -298,8 +330,8 @@ class RestQuery(Resource):
                    outputTar, 
                    bool(params['dontMerge']), 
                    str(params['pathway_id']), 
-                   str(params['fillOrphanSpecies']), 
-                   bool(params['compartment_id']))
+                   bool(params['fillOrphanSpecies']), 
+                   str(params['compartment_id']))
         '''
         #### HDD ####
         runFBA_hdd(inputTar, 
@@ -307,8 +339,8 @@ class RestQuery(Resource):
                    outputTar, 
                    bool(params['dontMerge']), 
                    str(params['pathway_id']), 
-                   str(params['fillOrphanSpecies']), 
-                   bool(params['compartment_id']))
+                   bool(params['fillOrphanSpecies']), 
+                   str(params['compartment_id']))
         ###### IMPORTANT ######
         outputTar.seek(0)
         #######################
