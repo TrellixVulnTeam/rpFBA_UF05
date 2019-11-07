@@ -6,19 +6,15 @@ import libsbml
 import argparse
 import sys #exit using sys exit if any error is encountered
 import os
-
 import io
-#import zipfile
 import tarfile
-import random
-import string
 import glob
-import shutil
 
 import json
 from datetime import datetime
 from flask import Flask, request, jsonify, send_file, abort
 from flask_restful import Resource, Api
+import tempfile
 
 sys.path.insert(0, '/home/')
 import rpSBML
@@ -200,13 +196,13 @@ def runFBA_mem(inputTar, inModel_bytes, outTar, dontMerge, pathway_id='rp_pathwa
 #
 #
 @processify
-def singleFBA_hdd(fileName, 
-                  sbml_path, 
-                  inModel_string, 
-                  tmpOutputFolder, 
-                  dontMerge, 
-                  pathway_id, 
-                  fillOrphanSpecies, 
+def singleFBA_hdd(fileName,
+                  sbml_path,
+                  inModel_string,
+                  tmpOutputFolder,
+                  dontMerge,
+                  pathway_id,
+                  fillOrphanSpecies,
                   compartment_id):
     rpsbml = rpSBML.rpSBML(fileName)
     rpsbml.readSBML(sbml_path)
@@ -246,42 +242,37 @@ def singleFBA_hdd(fileName,
 ##
 #
 #
-def runFBA_hdd(inputTar, 
-               inModel_bytes, 
-               outputTar, 
-               dontMerge, 
-               pathway_id='rp_pathway', 
-               fillOrphanSpecies=False, 
+def runFBA_hdd(inputTar,
+               inModel_bytes,
+               outputTar,
+               dontMerge,
+               pathway_id='rp_pathway',
+               fillOrphanSpecies=False,
                compartment_id='MNXC3'):
-    if not os.path.exists(os.getcwd()+'/tmp'):
-        os.mkdir(os.getcwd()+'/tmp')
-    tmpInputFolder = os.getcwd()+'/tmp/'+''.join(random.choice(string.ascii_lowercase) for i in range(15))
-    tmpOutputFolder = os.getcwd()+'/tmp/'+''.join(random.choice(string.ascii_lowercase) for i in range(15))
-    os.mkdir(tmpInputFolder)
-    os.mkdir(tmpOutputFolder)
-    tar = tarfile.open(fileobj=inputTar, mode='r:xz')
-    tar.extractall(path=tmpInputFolder)
-    tar.close()
-    #open the model as a string
-    inModel_string = inModel_bytes.read().decode('utf-8')
-    for sbml_path in glob.glob(tmpInputFolder+'/*'):
-        fileName = sbml_path.split('/')[-1].replace('.sbml', '')
-        singleFBA_hdd(fileName, 
-                      sbml_path, 
-                      inModel_string, 
-                      tmpOutputFolder, 
-                      dontMerge, 
-                      pathway_id, 
-                      fillOrphanSpecies, 
-                      compartment_id)
-    with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
-        for sbml_path in glob.glob(tmpOutputFolder+'/*'):
-            fileName = str(sbml_path.split('/')[-1].replace('.sbml', ''))
-            info = tarfile.TarInfo(fileName)
-            info.size = os.path.getsize(sbml_path)
+    with tempfile.TemporaryDirectory() as tmpOutputFolder:
+        with tempfile.TemporaryDirectory() as tmpInputFolder:
+            tar = tarfile.open(fileobj=inputTar, mode='r:xz')
+            tar.extractall(path=tmpInputFolder)
+            tar.close()
+            #open the model as a string
+            inModel_string = inModel_bytes.read().decode('utf-8')
+            for sbml_path in glob.glob(tmpInputFolder+'/*'):
+                fileName = sbml_path.split('/')[-1].replace('.sbml', '')
+                fileName += '.sbml.xml'
+                singleFBA_hdd(fileName,
+                              sbml_path,
+                              inModel_string,
+                              tmpOutputFolder,
+                              dontMerge,
+                              pathway_id,
+                              fillOrphanSpecies,
+                              compartment_id)
+            with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
+                for sbml_path in glob.glob(tmpOutputFolder+'/*'):
+                    fileName = str(sbml_path.split('/')[-1].replace('.sbml', ''))
+                    info = tarfile.TarInfo(fileName)
+                    info.size = os.path.getsize(sbml_path)
             ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
-    shutil.rmtree(tmpInputFolder)
-    shutil.rmtree(tmpOutputFolder)
 
 
 #######################################################
@@ -325,21 +316,21 @@ class RestQuery(Resource):
         outputTar = io.BytesIO()
         #### MEM ####
         '''
-        runFBA_mem(inputTar, 
-                   inSBML, 
-                   outputTar, 
-                   bool(params['dontMerge']), 
-                   str(params['pathway_id']), 
-                   bool(params['fillOrphanSpecies']), 
+        runFBA_mem(inputTar,
+                   inSBML,
+                   outputTar,
+                   bool(params['dontMerge']),
+                   str(params['pathway_id']),
+                   bool(params['fillOrphanSpecies']),
                    str(params['compartment_id']))
         '''
         #### HDD ####
-        runFBA_hdd(inputTar, 
-                   inSBML, 
-                   outputTar, 
-                   bool(params['dontMerge']), 
-                   str(params['pathway_id']), 
-                   bool(params['fillOrphanSpecies']), 
+        runFBA_hdd(inputTar,
+                   inSBML,
+                   outputTar,
+                   bool(params['dontMerge']),
+                   str(params['pathway_id']),
+                   bool(params['fillOrphanSpecies']),
                    str(params['compartment_id']))
         ###### IMPORTANT ######
         outputTar.seek(0)
