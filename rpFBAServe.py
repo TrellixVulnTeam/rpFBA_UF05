@@ -257,7 +257,7 @@ def runFBA_hdd(inputTar,
             #open the model as a string
             inModel_string = inModel_bytes.read().decode('utf-8')
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
-                fileName = sbml_path.split('/')[-1].replace('.sbml', '')
+                fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '')
                 fileName += '.sbml.xml'
                 singleFBA_hdd(fileName,
                               sbml_path,
@@ -272,7 +272,7 @@ def runFBA_hdd(inputTar,
                     fileName = str(sbml_path.split('/')[-1].replace('.sbml', ''))
                     info = tarfile.TarInfo(fileName)
                     info.size = os.path.getsize(sbml_path)
-            ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
+                    ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
 
 
 #######################################################
