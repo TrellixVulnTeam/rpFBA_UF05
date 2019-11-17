@@ -11,4 +11,4 @@ COPY rpFBAServe.py /home/
 ENTRYPOINT ["python"]
 CMD ["/home/rpFBAServe.py"]
 
-EXPOSE 8994
+EXPOSE 5005
