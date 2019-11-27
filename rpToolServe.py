@@ -17,8 +17,9 @@ from flask_restful import Resource, Api
 import tempfile
 
 sys.path.insert(0, '/home/')
+import rpTool as rpFBA
+
 import rpSBML
-import rpFBA
 
 ###################################################################################
 ###################################################################################
