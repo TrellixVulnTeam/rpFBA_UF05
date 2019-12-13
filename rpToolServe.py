@@ -275,72 +275,30 @@ def runFBA_hdd(inputTar,
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
 
 
-#######################################################
-############## REST ###################################
-#######################################################
-
-
-app = Flask(__name__)
-api = Api(app)
-
-
-def stamp(data, status=1):
-    appinfo = {'app': 'rpFBA', 'version': '1.0',
-               'author': 'Melchior du Lac',
-               'organization': 'BRS',
-               'time': datetime.now().isoformat(),
-               'status': status}
-    out = appinfo.copy()
-    out['data'] = data
-    return out
-
-
-class RestApp(Resource):
-    """ REST App."""
-    def post(self):
-        return jsonify(stamp(None))
-    def get(self):
-        return jsonify(stamp(None))
-
-
-class RestQuery(Resource):
-    """ REST interface that generates the Design.
-        Avoid returning numpy or pandas object in
-        order to keep the client lighter.
-    """
-    def post(self):
-        inputTar = request.files['inputTar']
-        inSBML = request.files['inSBML']
-        params = json.load(request.files['data'])
-        #pass the files to the rpReader
-        outputTar = io.BytesIO()
-        #### MEM ####
-        '''
-        runFBA_mem(inputTar,
-                   inSBML,
-                   outputTar,
-                   bool(params['dontMerge']),
-                   str(params['pathway_id']),
-                   bool(params['fillOrphanSpecies']),
-                   str(params['compartment_id']))
-        '''
-        #### HDD ####
-        runFBA_hdd(inputTar,
-                   inSBML,
-                   outputTar,
-                   bool(params['dontMerge']),
-                   str(params['pathway_id']),
-                   bool(params['fillOrphanSpecies']),
-                   str(params['compartment_id']))
-        ###### IMPORTANT ######
-        outputTar.seek(0)
-        #######################
-        return send_file(outputTar, as_attachment=True, attachment_filename='rpFBA.tar', mimetype='application/x-tar')
-
-
-api.add_resource(RestApp, '/REST')
-api.add_resource(RestQuery, '/REST/Query')
-
-
-if __name__== "__main__":
-    app.run(host="0.0.0.0", port=8888, debug=True, threaded=True)
+def main(inputTar,
+         inSBML,
+         outputTar,
+         dontMerge,
+         pathway_id,
+         fillOrphanSpecies,
+         compartment_id):
+    #pass the files to the rpReader
+    outputTar = io.BytesIO()
+    #### MEM ####
+    '''
+    runFBA_mem(inputTar,
+               inSBML,
+               outputTar,
+               dontMerge,
+               pathway_id,
+               fillOrphanSpecies,
+               compartment_id)
+    '''
+    #### HDD ####
+    runFBA_hdd(inputTar,
+               inSBML,
+               outputTar,
+               dontMerge,
+               pathway_id,
+               fillOrphanSpecies,
+               compartment_id)
