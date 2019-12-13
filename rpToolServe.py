@@ -282,23 +282,33 @@ def main(inputTar,
          pathway_id,
          fillOrphanSpecies,
          compartment_id):
-    #pass the files to the rpReader
-    outputTar = io.BytesIO()
-    #### MEM ####
-    '''
-    runFBA_mem(inputTar,
-               inSBML,
-               outputTar,
-               dontMerge,
-               pathway_id,
-               fillOrphanSpecies,
-               compartment_id)
-    '''
-    #### HDD ####
-    runFBA_hdd(inputTar,
-               inSBML,
-               outputTar,
-               dontMerge,
-               pathway_id,
-               fillOrphanSpecies,
-               compartment_id)
+	#pass the files to the rpReader
+	outputTar = io.BytesIO()
+	#### MEM ####
+	'''
+	runFBA_mem(inputTar,
+		    inSBML,
+		    outputTar,
+		    dontMerge,
+		    pathway_id,
+		    fillOrphanSpecies,
+		    compartment_id)
+	'''
+	#### HDD ####
+	runFBA_hdd(inputTar,
+		   inSBML,
+		   outputTar,
+		   dontMerge,
+		   pathway_id,
+		   fillOrphanSpecies,
+		   compartment_id)
+	########## IMPORTANT #####
+	outputTar.seek(0)
+	##########################
+	with open(outputTar, "wb") as outfile:
+	    while True:
+		# bufsize=16384
+		buf = outputTar.read(16384)
+		if not buf:
+		    break
+		outfile.write(buf)
