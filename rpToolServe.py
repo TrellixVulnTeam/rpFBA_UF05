@@ -10,6 +10,7 @@ import io
 import tarfile
 import glob
 import tempfile
+import shutil
 
 sys.path.insert(0, '/home/')
 import rpTool as rpFBA
@@ -282,7 +283,7 @@ def main(inputTar,
     with open(inputTar, 'rb') as inputTar_bytes:
         with open(inSBML, 'rb') as inSBML_bytes:
             #pass the files to the rpReader
-            outputTar = io.BytesIO()
+            outputTar_bytes = io.BytesIO()
             #### MEM ####
             '''
             runFBA_mem(inputTar_bytes,
@@ -296,18 +297,13 @@ def main(inputTar,
             #### HDD ####
             runFBA_hdd(inputTar_bytes,
                        inSBML_bytes,
-                       outputTar,
+                       outputTar_bytes,
                        dontMerge,
                        pathway_id,
                        fillOrphanSpecies,
                        compartment_id)
             ########## IMPORTANT #####
-            outputTar.seek(0)
+            outputTar_bytes.seek(0)
             ##########################
-            with open(outputTar, 'wb') as outfile:
-                while True:
-                    # bufsize=16384
-                    buf = outputTar.read(16384)
-                    if not buf:
-                        break
-                    outfile.write(buf)
+            with open(outputTar, 'wb') as f:
+                shutil.copyfileobj(outputTar_bytes, f, length=131072)

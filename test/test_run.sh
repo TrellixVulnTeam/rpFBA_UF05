@@ -1,4 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
-python tool_rpFBA.py -inputTar test_input.tar -outputTar test_output.tar -inSBML test_inSBML.sbml -dontMerge True -pathway_id pathway_id  -compartment_id MNXC3 -fillOrphanSpecies False
-mv test_output.tar results/
+docker run -v ${PWD}/inside_run.sh:/home/inside_run.sh -v ${PWD}/tool_rpFBA.py:/home/tool_rpFBA.py -v ${PWD}/test_input.tar:/home/test_input.tar -v ${PWD}/test_inSBML.sbml:/home/test_inSBML.sbml -v ${PWD}/results/:/home/results/ --rm brsynth/rpfba /bin/sh /home/inside_run.sh
+
+cp results/test_output.tar .
+
+#docker run -v ${PWD}/inside_run.sh:/home/inside_run.sh -v ${PWD}/tool_rpFBA.py:/home/tool_rpFBA.py -v ${PWD}/test_input.tar:/home/test_input.tar -v ${PWD}/test_inSBML.sbml:/home/test_inSBML.sbml -v ${PWD}/results/:/home/results/ --rm --user root brsynth/rpfba /bin/sh /home/inside_run.sh
+
