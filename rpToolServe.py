@@ -9,16 +9,10 @@ import os
 import io
 import tarfile
 import glob
-
-import json
-from datetime import datetime
-from flask import Flask, request, jsonify, send_file, abort
-from flask_restful import Resource, Api
 import tempfile
 
 sys.path.insert(0, '/home/')
 import rpTool as rpFBA
-
 import rpSBML
 
 ###################################################################################
@@ -275,6 +269,9 @@ def runFBA_hdd(inputTar,
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
 
 
+##
+#
+#
 def main(inputTar,
          inSBML,
          outputTar,
@@ -282,33 +279,35 @@ def main(inputTar,
          pathway_id,
          fillOrphanSpecies,
          compartment_id):
-	#pass the files to the rpReader
-	outputTar = io.BytesIO()
-	#### MEM ####
-	'''
-	runFBA_mem(inputTar,
-		    inSBML,
-		    outputTar,
-		    dontMerge,
-		    pathway_id,
-		    fillOrphanSpecies,
-		    compartment_id)
-	'''
-	#### HDD ####
-	runFBA_hdd(inputTar,
-		   inSBML,
-		   outputTar,
-		   dontMerge,
-		   pathway_id,
-		   fillOrphanSpecies,
-		   compartment_id)
-	########## IMPORTANT #####
-	outputTar.seek(0)
-	##########################
-	with open(outputTar, "wb") as outfile:
-	    while True:
-		# bufsize=16384
-		buf = outputTar.read(16384)
-		if not buf:
-		    break
-		outfile.write(buf)
+    with open(inputTar, 'rb') as inputTar_bytes:
+        with open(inSBML, 'rb') as inSBML_bytes:
+            #pass the files to the rpReader
+            outputTar = io.BytesIO()
+            #### MEM ####
+            '''
+            runFBA_mem(inputTar_bytes,
+                       inSBML_bytes,
+                       outputTar,
+                       dontMerge,
+                       pathway_id,
+                       fillOrphanSpecies,
+                       compartment_id)
+            '''
+            #### HDD ####
+            runFBA_hdd(inputTar_bytes,
+                       inSBML_bytes,
+                       outputTar,
+                       dontMerge,
+                       pathway_id,
+                       fillOrphanSpecies,
+                       compartment_id)
+            ########## IMPORTANT #####
+            outputTar.seek(0)
+            ##########################
+            with open(outputTar, 'wb') as outfile:
+                while True:
+                    # bufsize=16384
+                    buf = outputTar.read(16384)
+                    if not buf:
+                        break
+                    outfile.write(buf)
