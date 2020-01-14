@@ -14,11 +14,11 @@ import json
 ##
 #
 #
-def rpFBAUpload(inputTar, 
+def rpFBAUpload(inputTar,
         pathway_id,
         dontMerge,
         inSBML,
-        server_url, 
+        server_url,
         outputTar,
         compartment_id,
         fillOrphanSpecies):
@@ -37,9 +37,9 @@ def rpFBAUpload(inputTar,
     else:
         print('Cannot recognise fillOrphanSpecies')
     # Post request
-    data = {'pathway_id': pathway_id, 
-            'dontMerge': dontMerge, 
-            'compartment_id': compartment_id, 
+    data = {'pathway_id': pathway_id,
+            'dontMerge': dontMerge,
+            'compartment_id': compartment_id,
             'fillOrphanSpecies': fillOrphanSpecies}
     files = {'inputTar': open(inputTar, 'rb'),
              'inSBML': open(inSBML, 'rb'),
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     parser.add_argument('-compartment_id', type=str)
     parser.add_argument('-fillOrphanSpecies', type=str)
     params = parser.parse_args()
-    rpFBAUpload(params.inputTar, 
+    rpFBAUpload(params.inputTar,
             params.pathway_id,
             params.dontMerge,
             params.inSBML,
