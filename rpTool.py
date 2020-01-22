@@ -43,6 +43,8 @@ class rpFBA:
         try:
             self.cobraModel = cobra.io.read_sbml_model(self.rpsbml.document.toXMLNode().toXMLString(),
                     use_fbc_package=True)
+            #use CPLEX
+            # self.cobraModel.solver = 'cplex'
         except cobra.io.sbml.CobraSBMLError as e:
             self.logger.error(e)
             self.logger.error('Cannot convert the libSBML model to Cobra')
@@ -138,54 +140,25 @@ class rpFBA:
             '''
 
 
-    ## function to add the splitObj or any other objective that does not exist in the model
+    ## set Bi-objective 
     #
     #
-    def addObjective():
-        pass       
-
-
-    ## Given that there can be multiple objectives defined in the SBML, this function switches between different ones
-    #
-    # TODO: 
-    def switchObjective(self, objId):
-        fbc_plugin = self.rpsbml.model.getPlugin('fbc')
-        listObj = fbc_plugin.getListOfObjectives()
-        if objId in [i.getId() for i in listObj]:
-            listObj.setActiveObjective(objId)
-            return objId
-        else:
-            logger.warning('The objective Id '+str(objId)+' does not exist in rpsbml')
-            return None
-        self.libsbml_to_cobra()
-
-
-    ##
-    #
-    #
-    def libsbml_to_cobra(self):
-        self.cobraModel = cobra.io.read_sbml_model(document.toXMLNode().toXMLString())
-        #for an old version of cobrapy (0.4)
-        #return cobra.io.sbml3.parse_xml_into_model(lxml.etree.fromstring(rpsbml.document.toXMLNode().toXMLString()))
+    def setBiObjective(self, 
+                       fluxobj_id='rpFBA_biObj', 
+                       rpFBA_sink_reac='RP1_sink', 
+                       coefficients=[0.5, 0.5], 
+                       isMax=True, 
+                       biomass_reac):
+        try:
+            self.cobraModel.get_by_any(biomass_reac)
+        except KeyError:
+            self.logger.error('Cannot find the reaction '+str(biomass_reac))
+            return False
+        self.model.createMultiFluxObj(fluxobj_id, 
+                                      [rpFBA_sink_reac, biomass_reac], 
+                                      coefficients, 
+                                      isMax)
         
-    
-    ##
-    #
-    #TODO: should update the 
-    def simulate(self):
-        res = self.cobraModel.optimize()
-        return self.cobraModel.summary()
-        
-    
-    ##
-    #
-    # child: rule_score, fba_biomass_score, fba_target_score, fba_splitObj_score, global_score
-    def updateFBAscore(self, child, value):
-        self.rpsbml()
-        #reaction
-        for reac in self.rpsbml.getListOfReactions():
-            reac.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(child).addAttr('value', str(value))
-        #pathway
 
 
     ########################################################################
