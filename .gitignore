@@ -1,5 +1,7 @@
 __pycache__/
 rpSBML.py
 tmp/
+*.swp
 test/results/
 *.ipynb
+*.sbml
