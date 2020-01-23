@@ -5,3 +5,4 @@ tmp/
 test/results/
 *.ipynb
 *.sbml
+.DS_Store
