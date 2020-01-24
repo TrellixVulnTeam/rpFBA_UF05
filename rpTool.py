@@ -16,6 +16,11 @@ class rpFBA:
         #TODO enable FBC if not done so
         self.cobraModel = None
 
+    
+    ##########################################################
+    ################# Private Functions ######################
+    ##########################################################
+        
 
     ## Check the libSBML calls
     #
@@ -52,6 +57,11 @@ class rpFBA:
         except cobra.io.sbml.CobraSBMLError as e:
             self.logger.error(e)
             self.logger.error('Cannot convert the libSBML model to Cobra')
+
+
+    ##########################################################
+    ################# Helper functions #######################
+    ##########################################################
 
 
     ## Method to harcode into BRSynth annotations the results of a COBRA analysis
@@ -129,37 +139,6 @@ xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
                 result_brsynth_annot.addAttr('value', str(cobra_results.fluxes.get(flux_obj.getReaction())))
 
 
-
-
-    ## Find the objective based on the reaction ID and if not found create and simulate it 
-    #
-    #
-    def findCreateObjective(self, reaction_id, pathway_id='rp_pathway'):
-        fbc_plugin = self.rpsbml.model.getPlugin('fbc')
-        for objective in fbc_plugin.getListOfObjectives():
-            if len(objective.getListOfFluxObjectives())==1:
-                #try to retreive the results from the annotation
-                flux_objective = objective.getListOfFluxObjectives()[0]
-                if flux_objective.getReaction()==reaction_id:
-                    try:
-                        flux = float(flux_objective.getAnnotation().getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
-                        return objective.getId(), float(flux)
-                    except ValueError:
-                        #need to run the flux for the biomass objective
-                        self.runFBA(objective.getId(), pathway_id)
-                        try:
-                            flux = float(flux_objective.getAnnotation().getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
-                            return objective.getId(), float(flux)
-                        except ValueError:
-                            self.logger.error('There is an error setting the annotation for source objective')
-                            return '', 0.0
-        #if here means that was not found -- create and run it
-        self.rpsbml.createMultiFluxObj(str(reaction_id)+'_obj', [reaction_id], [1], True)
-        self.runFBA(str(reaction_id)+'_obj', pathway_id)
-        flux = float(flux_objective.getAnnotation().getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
-        return str(reaction_id)+'_obj', float(flux)
-
-
     ## set Bi-objective 
     #
     #
@@ -177,73 +156,6 @@ xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
                                       [rpFBA_sink_reaction, biomass_reaction],
                                       coefficients,
                                       isMax)
-
-
-    ## Set a given reaction's upper and lower bounds
-    #
-    # Sets the upper and lower bounds of a reaction. Note that if the numerical values passed
-    # are not recognised, new parameters are created for each of them
-    #
-    def setReactionConstraints(self, reaction_id, upper_bound, lower_bound):
-        reaction = self.rpsbml.model.getReaction(reaction_id)
-        if not reaction:
-            self.logger.error('Cannot find the reaction: '+str(reaction_id))
-            return False
-        reac_fbc = reaction.getPlugin('fbc')
-        self._checklibSBML(reac_fbc, 'extending reaction for FBC')
-        ########## upper bound #############
-        upper_param = None
-        old_upper_param = self.rpsbml.model.getParameter(reac_fbc.getUpperFluxBound()).value
-        for parameter in self.rpsbml.model.getListOfParameters():
-            if parameter.getValue()==upper_bound:
-                upper_param = parameter
-        if not upper_param:
-            upper_param = self.rpsbml.model.createParameter()
-            self._checklibSBML(upper_param, 'creating target parameter')
-            if upper_bound.is_integer():
-                self._checklibSBML(upper_param.setId('B_'+str(upper_bound)),
-                    'setting target parameter ID')
-            else:
-                self._checklibSBML(upper_param.setId('B_'+str(upper_bound).split('.')[0]+'_'+str(upper_bound).split('.')[1]),
-                    'setting target parameter ID')
-            self._checklibSBML(upper_param.setSBOTerm(626),
-                'setting target parameter SBO')
-            #WARNING: need to have a way to generate the right unit
-            self._checklibSBML(upper_param.setUnits('mmol_per_gDW_per_hr'),
-                'setting target parameter Units')
-            self._checklibSBML(upper_param.setValue(upper_bound),
-                'setting target parameter Value')
-            self._checklibSBML(upper_param.setConstant(True),
-                'setting target parameter ID')
-        self._checklibSBML(reac_fbc.setUpperFluxBound(upper_param.getId()),
-            'setting '+str(reaction_id)+' upper flux bound')
-        ######### lower bound #############
-        lower_param = None
-        old_lower_param = self.rpsbml.model.getParameter(reac_fbc.getLowerFluxBound()).value
-        for parameter in self.rpsbml.model.getListOfParameters():
-            if parameter.getValue()==upper_bound:
-                lower_param = parameter
-        if not lower_param:
-            lower_param = target_rpsbml.model.createParameter()
-            self._checklibSBML(lower_param, 'creating target parameter')
-            if upper_bound.is_integer():
-                self._checklibSBML(lower_param.setId('B_'+str(upper_bound)),
-                    'setting target parameter ID')
-            else:
-                self._checklibSBML(lower_param.setId('B_'+str(upper_bound).split('.')[0]+'_'+str(upper_bound).split('.')[1]),
-                    'setting target parameter ID')
-            self._checklibSBML(lower_param.setSBOTerm(626),
-                'setting target parameter SBO')
-            #WARNING: need to have a way to generate the right unit
-            self._checklibSBML(lower_param.setUnits('mmol_per_gDW_per_hr'),
-                'setting target parameter Units')
-            self._checklibSBML(lower_param.setValue(upper_bound),
-                'setting target parameter Value')
-            self._checklibSBML(lower_param.setConstant(True),
-                'setting target parameter ID')
-        self._checklibSBML(reac_fbc.setLowerFluxBound(lower_param.getId()),
-            'setting '+str(reaction_id)+' lower flux bound')
-        return old_upper_param, old_lower_param
 
 
     ##################################################################
@@ -290,12 +202,25 @@ xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
         #retreive the biomass objective and flux results and set as maxima
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        source_obj_id, source_flux = self.findCreateObjective(source_reaction, pathway_id)
-        target_obj_id, target_flux = self.findCreateObjective(target_reaction, pathway_id)
+        source_obj_id = self.rpsbml.findCreateObjective(source_reaction, pathway_id)
+        target_obj_id = self.rpsbml.findCreateObjective(target_reaction, pathway_id)
+        source_flux = None
+        #retreive the flux of the source
+        try:
+            fbc_obj = fbc_plugin.getObjective(source_obj_id)
+            source_flux = float(flux_objective.getAnnotation().getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
+        except ValueError:
+            #need to run the flux for the biomass objective
+            self.runFBA(source_obj_id, pathway_id)
+            try:
+                source_flux = float(flux_objective.getAnnotation().getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
+            except ValueError:
+                self.logger.error('There is an error getting the flux for source objective: '+str(source_reaction))
+                return 0.0
         #set bounds biomass as a fraction
-        old_upper_bound, old_lower_bound = self.setReactionConstraints(source_reaction,
-                                                                      source_flux*fraction_of_source,
-                                                                      source_flux*fraction_of_source)
+        old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
+                                                                              source_flux*fraction_of_source,
+                                                                              source_flux*fraction_of_source)
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(target_obj_id),
                 'Setting active objective '+str(target_obj_id))
         self._convertToCobra()
@@ -304,9 +229,9 @@ xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
         cobra_results = self.cobraModel.optimize()
         self.writeAnalysisResults(fbc_obj, cobra_results)
         #reset the bounds to the original values for the target
-        old_upper_bound, old_lower_bound = self.setReactionConstraints(source_reaction,
-                                                                      old_upper_bound,
-                                                                      old_lower_bound)
+        old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
+                                                                              old_upper_bound,
+                                                                              old_lower_bound)
         return cobra_results.objective_value
 
 
