@@ -15,7 +15,7 @@ class rpFBA:
         self.rpsbml = rpsbml
         #TODO enable FBC if not done so
         self.cobraModel = None
-        self._convertToCobra()
+        #self._convertToCobra()
 
 
     ##########################################################
@@ -69,40 +69,39 @@ class rpFBA:
     ## Method to harcode into BRSynth annotations the results of a COBRA analysis
     #
     #
-    def writeAnalysisResults(self, fbc_obj, cobra_results, pathway_id='rp_pathway'):
+    def writeAnalysisResults(self, fbc_plugin, cobra_results, pathway_id='rp_pathway'):
         groups = self.rpsbml.model.getPlugin('groups')
         self._checklibSBML(groups, 'Getting groups plugin')
         rp_pathway = groups.getGroup(pathway_id)
         self._checklibSBML(rp_pathway, 'Getting RP pathway')
-        self.rpsbml.addUpdateBRSynth(fbc_obj, 'flux_value', str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
-        for flux_obj in fbc_obj.getListOfFluxObjectives():
-            self.rpsbml.addUpdateBRSynth(flux_obj, 'flux_value', str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
-            for member in rp_pathway.getListOfMembers():
-                reac = self.rpsbml.model.getReaction(member.getIdRef())
-                if reac==None:
-                    self.logger.error('Cannot retreive the following reaction: '+str(member.getIdRef()))
-                    return False
-                self.rpsbml.addUpdateBRSynth(reac, 'fba_'+str(fbc_obj.getId()), str(cobra_results.fluxes.get(reac.getId())), 'mmol_per_gDW_per_hr', False)
-
+        self.rpsbml.addUpdateBRSynth(fbc_plugin, 'flux_value', str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
+        #write all the results to the reactions of pathway_id
+        for member in rp_pathway.getListOfMembers():
+            reac = self.rpsbml.getReaction(member.getIdRef())
+            if reac==None:
+                self.logger.error('Cannot retreive the following reaction: '+str(member.getIdRef()))
+                return False
+            self.rpsbml.addUpdateBRSynth(reac, 'fba_'+str(fbc_plugin.getId()), str(cobra_results.fluxes.get(reac.getId())), 'mmol_per_gDW_per_hr', False)
+        
 
     ## set Bi-objective 
     #
     #
-    def setMultiObjective(self,
+    def runMultiObjective(self,
                           reactions,
-                          coefficients=[0.5, 0.5],
-                          fluxobj_id='rpFBA_biObj',
-                          isMax=True):
-        try:
-            self.cobraModel.get_by_any(biomass_reaction)
-        except KeyError:
-            self.logger.error('Cannot find the reaction '+str(biomass_reaction))
-            return False
-        self.model.createMultiFluxObj(fluxobj_id,
-                                      [rpFBA_sink_reaction, biomass_reaction],
-                                      coefficients,
-                                      isMax)
-
+                          coefficients,
+                          isMax=True,
+                          pathway_id='rp_pathway',
+                          objective_id=None):
+        fbc_plugin = self.rpsbml.model.getPlugin('fbc')
+        self._checklibSBML(fbc_plugin, 'Getting FBC package')
+        objective_id = self.rpsbml.findCreateObjective(reactions, coefficients, isMax, objective_id)
+        self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
+                'Setting active objective '+str(objective_id))
+        self._convertToCobra()
+        cobra_results = self.cobraModel.optimize()
+        self.writeAnalysisResults(fbc_plugin, cobra_results, pathway_id)
+    
 
     ##################################################################
     ######################## Model runs ##############################
@@ -130,66 +129,64 @@ class rpFBA:
     ##
     #
     #
-    def runFBA(self, objective_id, pathway_id='rp_pathway'):
+    def runFBA(self, reaction_id, isMax=True, pathway_id='rp_pathway'):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        fbc_obj = fbc_plugin.getObjective(objective_id)
-        self._checklibSBML(fbc_obj, 'Getting the following objective '+str(objective_id))
+        objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], isMax)
         #run the FBA
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
         self._convertToCobra()
         cobra_results = self.cobraModel.optimize()
-        self.writeAnalysisResults(fbc_obj, cobra_results, pathway_id)
+        self.writeAnalysisResults(fbc_plugin, cobra_results, pathway_id)
 
 
     ##
     #
     #
-    def runParsimoniousFBA(self, objective_id, fraction_of_optimum=0.95, pathway_id='rp_pathway'):
+    def runParsimoniousFBA(self, reaction_id, fraction_of_optimum=0.95, isMax=True, pathway_id='rp_pathway'):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        fbc_obj = fbc_plugin.getObjective(objective_id)
-        self._checklibSBML(fbc_obj, 'Getting the following objective '+str(objective_id))
+        objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], isMax)
         #run the FBA
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
         self._convertToCobra()
         cobra_results = pfba(self.cobraModel, fraction_of_optimum)
-        writeAnalysisResults(fbc_obj, cobra_results, pathway_id)
+        self.writeAnalysisResults(fbc_plugin, cobra_results, pathway_id)
 
 
     ## Optimise for a target reaction while fixing a source reaction to the fraction of its optimum
     #
     #
-    def runFractionReaction(self, source_reaction, target_reaction, fraction_of_source=0.75, pathway_id='rp_pathway'):
+    def runFractionReaction(self, source_reaction, target_reaction, fraction_of_source=0.75, isMax=True, pathway_id='rp_pathway'):
         #retreive the biomass objective and flux results and set as maxima
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        source_obj_id = self.rpsbml.findCreateObjective(source_reaction, pathway_id)
-        #target_obj_id = self.rpsbml.findCreateObjective(target_reaction, pathway_id)
+        source_obj_id = self.rpsbml.findCreateObjective([source_reaction], [1], isMax)
+        #TODO: use the rpSBML BRSynth annotation parser
         source_flux = None
-        fbc_obj = fbc_plugin.getObjective(source_obj_id)
-        fbc_obj_annot = fbc_obj.getAnnotation()
-        if not fbc_obj_annot==None:
-            if not fbc_obj_annot.getAnnotationString()=='':
-                source_flux = float(fbc_obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
+        fbc_plugin = fbc_plugin.getObjective(source_obj_id)
+        fbc_plugin_annot = fbc_plugin.getAnnotation()
+        if not fbc_plugin_annot==None:
+            if not fbc_plugin_annot.getAnnotationString()=='':
+                source_flux = float(fbc_plugin_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
             else:
                 self.runFBA(source_obj_id, pathway_id)
-                fbc_obj = fbc_plugin.getObjective(source_obj_id)
-                fbc_obj_annot = fbc_obj.getAnnotation()
-                if fbc_obj_annot==None:
+                fbc_plugin = fbc_plugin.getObjective(source_obj_id)
+                fbc_plugin_annot = fbc_plugin.getAnnotation()
+                if fbc_plugin_annot==None:
                     self.logger.error('There is an error getting the flux for source objective: '+str(source_reaction))
                     return 0.0
-                source_flux = float(fbc_obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
+                source_flux = float(fbc_plugin_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
         else:
             self.runFBA(source_obj_id, pathway_id)
-            fbc_obj = fbc_plugin.getObjective(source_obj_id)
-            fbc_obj_annot = fbc_obj.getAnnotation()
-            if fbc_obj_annot==None:
+            fbc_plugin = fbc_plugin.getObjective(source_obj_id)
+            fbc_plugin_annot = fbc_plugin.getAnnotation()
+            if fbc_plugin_annot==None:
                 self.logger.error('There is an error getting the flux for source objective: '+str(source_reaction))
                 return 0.0
-            source_flux = float(fbc_obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
+            source_flux = float(fbc_plugin_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
         #set bounds biomass as a fraction
         target_obj_id = str(target_reaction)+'__restricted_'+str(source_reaction)
         self.rpsbml.createMultiFluxObj(str(target_reaction)+'__restricted_'+str(source_reaction), ['RP1_sink'], [1])
@@ -199,10 +196,10 @@ class rpFBA:
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(target_obj_id),
                 'Setting active objective '+str(target_obj_id))
         self._convertToCobra()
-        fbc_obj = fbc_plugin.getObjective(target_obj_id)
-        self._checklibSBML(fbc_obj, 'Getting the following objective '+str(target_obj_id))
+        fbc_plugin = fbc_plugin.getObjective(target_obj_id)
+        self._checklibSBML(fbc_plugin, 'Getting the following objective '+str(target_obj_id))
         cobra_results = self.cobraModel.optimize()
-        self.writeAnalysisResults(fbc_obj, cobra_results)
+        self.writeAnalysisResults(fbc_plugin, cobra_results)
         #reset the bounds to the original values for the target
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               old_upper_bound,
