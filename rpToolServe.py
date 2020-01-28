@@ -127,15 +127,16 @@ def processify(func):
 #hack to stop the memory leak. Indeed it seems that looping through rpFBA and the rest causes a memory leak... According to: https://github.com/opencobra/cobrapy/issues/568 there is still memory leak issues with cobrapy. looping through hundreds of models and running FBA may be the culprit
 
 ########################## use RAM ######################
-
+"""
+'''
 ##
 #
 #
 @processify
-def singleFBA_mem(member_name, rpsbml_string, inModel_string, dontMerge, pathway_id, fillOrphanSpecies, compartment_id):
+def singleFBA_mem(member_name, rpsbml_string, inModel_string, dontMerge, pathway_id, fill_orphan_species, compartment_id):
     rpsbml = rpSBML.rpSBML(member_name, libsbml.readSBMLFromString(rpsbml_string))
     input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
-    rpsbml.mergeModels(input_rpsbml, pathway_id, fillOrphanSpecies, compartment_id)
+    rpsbml.mergeModels(input_rpsbml, pathway_id, fill_orphan_species, compartment_id)
     rpfba = rpFBA.rpFBA(input_rpsbml)
     rpfba.allObj(pathway_id)
     if dontMerge:
@@ -171,7 +172,7 @@ def singleFBA_mem(member_name, rpsbml_string, inModel_string, dontMerge, pathway
 ##
 #
 #
-def runFBA_mem(inputTar, inModel_bytes, outTar, dontMerge, pathway_id='rp_pathway', fillOrphanSpecies=False, compartment_id='MNXC3'):
+def runFBA_mem(inputTar, inModel_bytes, outTar, dontMerge, pathway_id='rp_pathway', fill_orphan_species=False, compartment_id='MNXC3'):
     #open the model as a string
     inModel_string = inModel_bytes.read().decode('utf-8')
     #loop through all of them and run FBA on them
@@ -184,7 +185,8 @@ def runFBA_mem(inputTar, inModel_bytes, outTar, dontMerge, pathway_id='rp_pathwa
                     info = tarfile.TarInfo(member.name)
                     info.size = len(data)
                     tf.addfile(tarinfo=info, fileobj=fiOut)
-
+'''
+"""
 
 ####################### use HDD ############################
 
@@ -195,17 +197,36 @@ def runFBA_mem(inputTar, inModel_bytes, outTar, dontMerge, pathway_id='rp_pathwa
 def singleFBA_hdd(fileName,
                   sbml_path,
                   inModel_string,
+                  sim_type,
+                  reactions,
+                  coefficients,
+                  isMax,
+                  fraction_of,
                   tmpOutputFolder,
                   dontMerge,
                   pathway_id,
-                  fillOrphanSpecies,
+                  fill_orphan_species,
                   compartment_id):
     rpsbml = rpSBML.rpSBML(fileName)
     rpsbml.readSBML(sbml_path)
     input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
-    rpsbml.mergeModels(input_rpsbml, pathway_id, fillOrphanSpecies, compartment_id)
+    rpsbml.mergeModels(input_rpsbml, pathway_id, fill_orphan_species, compartment_id)
     rpfba = rpFBA.rpFBA(input_rpsbml)
-    rpfba.allObj(pathway_id)
+    ####### fraction of reaction ######
+    if sim_type=='fraction':
+        rpfba.runFractionReaction(reactions[0], reactions[1], fraction_of_source, pathway_id)
+    ####### FBA ########
+    elif sim_type=='fba':
+        rpfba.runFBA(reactions[0], isMax, pathway_id)
+    ####### pFBA #######
+    elif sim_type=='pfba':
+        rpfba.runParsimoniousFBA(reactions[0], fraction_of, isMax, pathway_id)
+    ###### multi objective #####
+    elif sim_type=='multi_fba':
+        rpfba.runMultiObjective(reactions, coefficients, isMax, pathway_id)
+    else:
+        logging.error('Cannot recognise sim_type: '+str(sim_type))
+    
     if dontMerge:
         groups = rpfba.rpsbml.model.getPlugin('groups')
         rp_pathway = groups.getGroup(pathway_id)
@@ -241,9 +262,14 @@ def singleFBA_hdd(fileName,
 def runFBA_hdd(inputTar,
                inModel_bytes,
                outputTar,
+               sim_type,
+               reactions,
+               coefficients,
+               isMax,
+               fraction_of,
                dontMerge,
                pathway_id='rp_pathway',
-               fillOrphanSpecies=False,
+               fill_orphan_species=False,
                compartment_id='MNXC3'):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
@@ -253,18 +279,23 @@ def runFBA_hdd(inputTar,
             #open the model as a string
             inModel_string = inModel_bytes.read().decode('utf-8')
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
-                fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '')
+                fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
                 singleFBA_hdd(fileName,
                               sbml_path,
                               inModel_string,
+                              sim_type,
+                              reactions,
+                              coefficients,
+                              isMax,
+                              fraction_of,
                               tmpOutputFolder,
                               dontMerge,
                               pathway_id,
-                              fillOrphanSpecies,
+                              fill_orphan_species,
                               compartment_id)
             with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
-                    fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', ''))
+                    fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
                     info = tarfile.TarInfo(fileName)
                     info.size = os.path.getsize(sbml_path)
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
@@ -276,9 +307,14 @@ def runFBA_hdd(inputTar,
 def main(inputTar,
          inSBML,
          outputTar,
+         sim_type,
+         reactions,
+         coefficients,
+         isMax,
+         fraction_of,
          dontMerge,
          pathway_id,
-         fillOrphanSpecies,
+         fill_orphan_species,
          compartment_id):
     with open(inputTar, 'rb') as inputTar_bytes:
         with open(inSBML, 'rb') as inSBML_bytes:
@@ -291,16 +327,21 @@ def main(inputTar,
                        outputTar,
                        dontMerge,
                        pathway_id,
-                       fillOrphanSpecies,
+                       fill_orphan_species,
                        compartment_id)
             '''
             #### HDD ####
-            runFBA_hdd(inputTar_bytes,
-                       inSBML_bytes,
-                       outputTar_bytes,
+            runFBA_hdd(inputTar,
+                       inSBML,
+                       outputTar,
+                       sim_type,
+                       reactions,
+                       coefficients,
+                       isMax,
+                       fraction_of,
                        dontMerge,
                        pathway_id,
-                       fillOrphanSpecies,
+                       fill_orphan_species,
                        compartment_id)
             ########## IMPORTANT #####
             outputTar_bytes.seek(0)
