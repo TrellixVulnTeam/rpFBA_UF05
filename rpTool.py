@@ -92,7 +92,7 @@ class rpFBA:
                 self.logger.error('Cannot retreive the following reaction: '+str(member.getIdRef()))
                 return False
             self.rpsbml.addUpdateBRSynth(reac, 'fba_'+str(objective_id), str(cobra_results.fluxes.get(reac.getId())), 'mmol_per_gDW_per_hr', False)
-        
+
 
     ## set Bi-objective 
     #

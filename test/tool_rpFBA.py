@@ -5,6 +5,9 @@ Created on September 21 2019
 @author: Melchior du Lac
 @description: Galaxy script to query rpFBA REST service
 
+
+python tool_rpFBA.py -inputTar test_input.tar -inSBML test_inSBML.sbml -sim_type fraction -reactions biomass RP1_sink -coefficients 0 0 -isMax True -fraction_of 0.95 -outputTar test_output.tar -dontMerge False -pathway_id rp_pathway -compartment_id MNXC3 -fill_orphan_species False
+
 """
 import argparse
 import sys
@@ -30,15 +33,15 @@ if __name__ == "__main__":
     parser.add_argument('-compartment_id', type=str)
     parser.add_argument('-fill_orphan_species', type=str)
     params = parser.parse_args()
-    rpToolServer.main(params.inputTar, 
+    rpToolServe.main(params.inputTar, 
             params.inSBML,
+            params.outputTar,
             params.sim_type,
             params.reactions,
             params.coefficients,
             params.isMax,
             params.fraction_of,
-            params.outputTar,
             params.dontMerge,
             params.pathway_id,
-            params.compartment_id,
-            params.fill_orphan_species)
+            params.fill_orphan_species,
+            params.compartment_id)
