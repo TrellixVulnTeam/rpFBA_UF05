@@ -208,8 +208,6 @@ def singleFBA_hdd(fileName,
                   pathway_id,
                   fill_orphan_species,
                   compartment_id):
-    print('########### singleFBA_hdd #############')
-    print(fileName)
     rpsbml = rpSBML.rpSBML(fileName)
     rpsbml.readSBML(sbml_path)
     input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
@@ -238,7 +236,14 @@ def singleFBA_hdd(fileName,
             reacIN = rpsbml.model.getReaction(member.getIdRef())
             reacIN.setAnnotation(reacFBA.getAnnotation())
             #### species TODO: only for shadow price
-        #### species #TODO: implement this for shadow prices
+        #### add groups ####
+        source_groups = rpfba.rpsbml.model.getPlugin('groups')
+        target_groups = rpsbml.model.getPlugin('groups')
+        target_groupsID = [i.getId() for i in target_groups.getListOfGroups()]
+        for source_group in source_groups.getListOfGroups():
+            if source_group.getId() in target_groupsID:
+                target_group = target_groups.getGroup(source_group.getId())
+                target_group.setAnnotation(source_group.getAnnotation())
         #### add objectives ####
         source_fbc = rpfba.rpsbml.model.getPlugin('fbc')
         target_fbc = rpsbml.model.getPlugin('fbc')
@@ -255,7 +260,7 @@ def singleFBA_hdd(fileName,
                 target_fbc.addObjective(source_obj)
         rpsbml.writeSBML(tmpOutputFolder)
     else:
-        input_rpsbml.writeSBML(tmpOutputFolder)
+        rpfba.rpsbml.writeSBML(tmpOutputFolder)
 
 
 ##
