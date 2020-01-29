@@ -77,14 +77,16 @@ class rpFBA:
             self.rpsbml.createPathway(pathway_id)
             rp_pathway = groups.getGroup(pathway_id)
         self._checklibSBML(rp_pathway, 'Getting RP pathway')
+        #write the results to the rp_pathway
+        self.rpsbml.addUpdateBRSynth(rp_pathway, 'fba_'+str(objective_id), str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
         #get the objective
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
+        self._checklibSBML(fbc_plugin, 'Getting FBC plugin')
         obj = fbc_plugin.getObjective(objective_id)
+        self._checklibSBML(obj, 'Getting objective')
         self.rpsbml.addUpdateBRSynth(obj, 'flux_value', str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
         for flux_obj in obj.getListOfFluxObjectives():
             self.rpsbml.addUpdateBRSynth(flux_obj, 'flux_value', str(cobra_results.fluxes.get(flux_obj.getReaction())), 'mmol_per_gDW_per_hr', False)
-        #write the results to the rp_pathway
-        self.rpsbml.addUpdateBRSynth(rp_pathway, 'fba_'+str(objective_id), str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
         #write all the results to the reactions of pathway_id
         for member in rp_pathway.getListOfMembers():
             reac = self.rpsbml.model.getReaction(member.getIdRef())
@@ -92,6 +94,11 @@ class rpFBA:
                 self.logger.error('Cannot retreive the following reaction: '+str(member.getIdRef()))
                 return False
             self.rpsbml.addUpdateBRSynth(reac, 'fba_'+str(objective_id), str(cobra_results.fluxes.get(reac.getId())), 'mmol_per_gDW_per_hr', False)
+
+
+    ##################################################################
+    ######################## Model runs ##############################
+    ##################################################################
 
 
     ## set Bi-objective 
@@ -111,10 +118,6 @@ class rpFBA:
         self._convertToCobra()
         cobra_results = self.cobraModel.optimize()
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
-
-    ##################################################################
-    ######################## Model runs ##############################
-    ##################################################################
 
 
     ##
@@ -148,6 +151,7 @@ class rpFBA:
         self._convertToCobra()
         cobra_results = self.cobraModel.optimize()
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
+        return cobra_results.objective_value
 
 
     ##
@@ -163,6 +167,7 @@ class rpFBA:
         self._convertToCobra()
         cobra_results = pfba(self.cobraModel, fraction_of_optimum)
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
+        return cobra_results.objective_value
 
 
     ## Optimise for a target reaction while fixing a source reaction to the fraction of its optimum

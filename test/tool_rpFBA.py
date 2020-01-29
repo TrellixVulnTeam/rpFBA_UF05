@@ -33,7 +33,7 @@ if __name__ == "__main__":
     parser.add_argument('-compartment_id', type=str)
     parser.add_argument('-fill_orphan_species', type=str)
     params = parser.parse_args()
-    rpToolServe.main(params.inputTar, 
+    rpToolServe.main(params.inputTar,
             params.inSBML,
             params.outputTar,
             params.sim_type,

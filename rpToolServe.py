@@ -229,7 +229,6 @@ def singleFBA_hdd(fileName,
         rpfba.runMultiObjective(reactions, coefficients, isMax, pathway_id)
     else:
         logging.error('Cannot recognise sim_type: '+str(sim_type))
-    
     if dontMerge:
         groups = rpfba.rpsbml.model.getPlugin('groups')
         rp_pathway = groups.getGroup(pathway_id)
