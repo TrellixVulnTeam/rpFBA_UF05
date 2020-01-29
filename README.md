@@ -12,13 +12,13 @@ REST tool that reads a collection of rpSBML files (in a tar.xz) and a GEM SBML m
 ### Compiling and running
 
 ```
-docker build -t brsynth/rpfba -f Dockerfile .
+docker build -t brsynth/rpfba-rest -f Dockerfile .
 ```
 
 Run the service
 
 ```
-docker run -p 8888:8888 brsynth/rpfba
+docker run -p 8888:8888 brsynth/rpfba-rest
 ```
 
 ## Running the tests

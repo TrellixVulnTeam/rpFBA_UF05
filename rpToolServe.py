@@ -231,7 +231,7 @@ def singleFBA_hdd(fileName,
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
-        rpfba.runFractionReaction(reactions[0], reactions[1], fraction_of_source, pathway_id)
+        rpfba.runFractionReaction(reactions[0], reactions[1], fraction_of, pathway_id)
     ####### FBA ########
     elif sim_type=='fba':
         rpfba.runFBA(reactions[0], isMax, pathway_id)
@@ -242,8 +242,7 @@ def singleFBA_hdd(fileName,
     elif sim_type=='multi_fba':
         rpfba.runMultiObjective(reactions, coefficients, isMax, pathway_id)
     else:
-        logging.error('Cannot recognise sim_type: '+str(sim_type))
-    
+        logging.error('Cannot recognise sim_type: '+str(sim_type))    
     if dontMerge:
         groups = rpfba.rpsbml.model.getPlugin('groups')
         rp_pathway = groups.getGroup(pathway_id)
@@ -253,7 +252,14 @@ def singleFBA_hdd(fileName,
             reacIN = rpsbml.model.getReaction(member.getIdRef())
             reacIN.setAnnotation(reacFBA.getAnnotation())
             #### species TODO: only for shadow price
-        #### species #TODO: implement this for shadow prices
+        #### add groups ####
+        source_groups = rpfba.rpsbml.model.getPlugin('groups')
+        target_groups = rpsbml.model.getPlugin('groups')
+        target_groupsID = [i.getId() for i in target_groups.getListOfGroups()]
+        for source_group in source_groups.getListOfGroups():
+            if source_group.getId() in target_groupsID:
+                target_group = target_groups.getGroup(source_group.getId())
+                target_group.setAnnotation(source_group.getAnnotation())
         #### add objectives ####
         source_fbc = rpfba.rpsbml.model.getPlugin('fbc')
         target_fbc = rpsbml.model.getPlugin('fbc')
@@ -270,7 +276,7 @@ def singleFBA_hdd(fileName,
                 target_fbc.addObjective(source_obj)
         rpsbml.writeSBML(tmpOutputFolder)
     else:
-        input_rpsbml.writeSBML(tmpOutputFolder)
+        rpfba.rpsbml.writeSBML(tmpOutputFolder)
 
 
 ##
@@ -304,7 +310,7 @@ def runFBA_hdd(inputTar,
                               reactions,
                               coefficients,
                               isMax,
-                              fraction_of,
+                              float(fraction_of),
                               tmpOutputFolder,
                               dontMerge,
                               pathway_id,
@@ -370,10 +376,6 @@ class RestQuery(Resource):
                    bool(params['fill_orphan_species']),
                    str(params['compartment_id']))
         '''
-        logging.error(params['reactions'])
-        logging.error(type(params['reactions']))
-        logging.error(params['coefficients'])
-        logging.error(type(params['coefficients']))
         #### HDD ####
         runFBA_hdd(inputTar,
                    inSBML,

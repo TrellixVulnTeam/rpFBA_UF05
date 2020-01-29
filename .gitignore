@@ -6,3 +6,4 @@ test/results/
 *.ipynb
 *.sbml
 .DS_Store
+test/test_output.tar
