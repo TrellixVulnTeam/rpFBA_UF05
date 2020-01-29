@@ -174,6 +174,9 @@ class rpFBA:
     #
     #
     def runFractionReaction(self, source_reaction, target_reaction, fraction_of_source=0.75, isMax=True, pathway_id='rp_pathway'):
+        print('##### runFractionReaction #####')
+        print('source_reaction: '+str(source_reaction))
+        print('target_reaction: '+str(target_reaction))
         #retreive the biomass objective and flux results and set as maxima
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
