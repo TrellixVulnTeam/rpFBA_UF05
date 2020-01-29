@@ -15,6 +15,8 @@ import requests
 import argparse
 import json
 import logging
+import tempfile
+import tarfile
 
 ##
 #

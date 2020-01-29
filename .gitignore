@@ -7,3 +7,4 @@ test/results/
 *.sbml
 .DS_Store
 test/test_output.tar
+test/test_output_single.tar
