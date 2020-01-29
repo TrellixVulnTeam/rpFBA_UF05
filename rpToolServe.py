@@ -11,6 +11,7 @@ import tarfile
 import glob
 import tempfile
 import shutil
+import logging
 
 sys.path.insert(0, '/home/')
 import rpTool as rpFBA
@@ -207,6 +208,8 @@ def singleFBA_hdd(fileName,
                   pathway_id,
                   fill_orphan_species,
                   compartment_id):
+    print('########### singleFBA_hdd #############')
+    print(fileName)
     rpsbml = rpSBML.rpSBML(fileName)
     rpsbml.readSBML(sbml_path)
     input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
@@ -214,7 +217,7 @@ def singleFBA_hdd(fileName,
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
-        rpfba.runFractionReaction(reactions[0], reactions[1], fraction_of_source, pathway_id)
+        rpfba.runFractionReaction(reactions[0], reactions[1], fraction_of, pathway_id)
     ####### FBA ########
     elif sim_type=='fba':
         rpfba.runFBA(reactions[0], isMax, pathway_id)
@@ -287,7 +290,7 @@ def runFBA_hdd(inputTar,
                               reactions,
                               coefficients,
                               isMax,
-                              fraction_of,
+                              float(fraction_of),
                               tmpOutputFolder,
                               dontMerge,
                               pathway_id,
@@ -331,14 +334,14 @@ def main(inputTar,
                        compartment_id)
             '''
             #### HDD ####
-            runFBA_hdd(inputTar,
-                       inSBML,
-                       outputTar,
+            runFBA_hdd(inputTar_bytes,
+                       inSBML_bytes,
+                       outputTar_bytes,
                        sim_type,
                        reactions,
                        coefficients,
                        isMax,
-                       fraction_of,
+                       float(fraction_of),
                        dontMerge,
                        pathway_id,
                        fill_orphan_species,
