@@ -37,7 +37,7 @@ def rpFBAUpload(inputTar,
     #convert dontMerge)
     if dontMerge=='False' or dontMerge==False:
         dontMerge = False
-    elif dontMerge=='True' or contMerge==True:
+    elif dontMerge=='True' or dontMerge==True:
         dontMerge = True
     else:
         logging.error('Cannot recognise dontMerge')
