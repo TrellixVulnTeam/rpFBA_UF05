@@ -258,6 +258,7 @@ def singleFBA_hdd(fileName,
                             target_fluxObj.setAnnotation(source_fluxObj.getAnnotation())
             else:
                 target_fbc.addObjective(source_obj)
+        rpsbml.createMultiFluxObj('obj_RP1_sink', ['RP1_sink'], [1])
         rpsbml.writeSBML(tmpOutputFolder)
     else:
         rpfba.rpsbml.writeSBML(tmpOutputFolder)
