@@ -67,7 +67,6 @@ def rpFBAUpload(input_tar,
     files = {'input_tar': open(input_tar, 'rb'),
              'full_sbml': open(full_sbml, 'rb'),
              'data': ('data.json', json.dumps(data))}
-    print(files)
     r = requests.post(server_url+'/Query', files=files)
     r.raise_for_status()
     with open(output, 'wb') as ot:

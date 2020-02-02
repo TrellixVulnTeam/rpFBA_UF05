@@ -233,13 +233,13 @@ def singleFBA_hdd(fileName,
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
-        rpfba.runFractionReaction(source_reaction, target_reactions, fraction_of, pathway_id)
+        rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of, pathway_id)
     ####### FBA ########
     elif sim_type=='fba':
         rpfba.runFBA(target_reaction, isMax, pathway_id)
     ####### pFBA #######
     elif sim_type=='pfba':
-        rpfba.runParsimoniousFBA(targetreaction, fraction_of, isMax, pathway_id)
+        rpfba.runParsimoniousFBA(target_reaction, fraction_of, isMax, pathway_id)
     else:
         logging.error('Cannot recognise sim_type: '+str(sim_type))    
     '''
@@ -301,18 +301,6 @@ def runFBA_hdd(inputTar,
                pathway_id='rp_pathway',
                fill_orphan_species=False,
                compartment_id='MNXC3'):
-    print('######## runFBA_hdd ########')
-    print(sim_type)
-    print(source_reaction)
-    print(target_reaction)
-    print(source_coefficient)
-    print(target_coefficient)
-    print(isMax)
-    print(fraction_of)
-    print(dontMerge)
-    print(pathway_id)
-    print(fill_orphan_species)
-    print(compartment_id)
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
             tar = tarfile.open(fileobj=inputTar, mode='r:xz')
