@@ -215,8 +215,10 @@ def singleFBA_hdd(fileName,
                   sbml_path,
                   inModel_string,
                   sim_type,
-                  reactions,
-                  coefficients,
+                  source_reaction,
+                  target_reaction,
+                  source_coefficient,
+                  target_coefficient,
                   isMax,
                   fraction_of,
                   tmpOutputFolder,
@@ -231,18 +233,20 @@ def singleFBA_hdd(fileName,
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
-        rpfba.runFractionReaction(reactions[0], reactions[1], fraction_of, pathway_id)
+        rpfba.runFractionReaction(source_reaction, target_reactions, fraction_of, pathway_id)
     ####### FBA ########
     elif sim_type=='fba':
-        rpfba.runFBA(reactions[0], isMax, pathway_id)
+        rpfba.runFBA(target_reaction, isMax, pathway_id)
     ####### pFBA #######
     elif sim_type=='pfba':
-        rpfba.runParsimoniousFBA(reactions[0], fraction_of, isMax, pathway_id)
+        rpfba.runParsimoniousFBA(targetreaction, fraction_of, isMax, pathway_id)
+    else:
+        logging.error('Cannot recognise sim_type: '+str(sim_type))    
+    '''
     ###### multi objective #####
     elif sim_type=='multi_fba':
         rpfba.runMultiObjective(reactions, coefficients, isMax, pathway_id)
-    else:
-        logging.error('Cannot recognise sim_type: '+str(sim_type))    
+    '''
     if dontMerge:
         groups = rpfba.rpsbml.model.getPlugin('groups')
         rp_pathway = groups.getGroup(pathway_id)
@@ -287,14 +291,28 @@ def runFBA_hdd(inputTar,
                inModel_bytes,
                outputTar,
                sim_type,
-               reactions,
-               coefficients,
+               source_reaction,
+               target_reaction,
+               source_coefficient,
+               target_coefficient,
                isMax,
                fraction_of,
                dontMerge,
                pathway_id='rp_pathway',
                fill_orphan_species=False,
                compartment_id='MNXC3'):
+    print('######## runFBA_hdd ########')
+    print(sim_type)
+    print(source_reaction)
+    print(target_reaction)
+    print(source_coefficient)
+    print(target_coefficient)
+    print(isMax)
+    print(fraction_of)
+    print(dontMerge)
+    print(pathway_id)
+    print(fill_orphan_species)
+    print(compartment_id)
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
             tar = tarfile.open(fileobj=inputTar, mode='r:xz')
@@ -308,10 +326,12 @@ def runFBA_hdd(inputTar,
                               sbml_path,
                               inModel_string,
                               sim_type,
-                              reactions,
-                              coefficients,
+                              source_reaction,
+                              target_reaction,
+                              source_coefficient,
+                              target_coefficient,
                               isMax,
-                              float(fraction_of),
+                              fraction_of,
                               tmpOutputFolder,
                               dontMerge,
                               pathway_id,
@@ -359,8 +379,8 @@ class RestQuery(Resource):
         order to keep the client lighter.
     """
     def post(self):
-        inputTar = request.files['inputTar']
-        inSBML = request.files['inSBML']
+        input_tar = request.files['input_tar']
+        full_sbml = request.files['full_sbml']
         params = json.load(request.files['data'])
         #pass the files to the rpReader
         outputTar = io.BytesIO()
@@ -378,15 +398,17 @@ class RestQuery(Resource):
                    str(params['compartment_id']))
         '''
         #### HDD ####
-        runFBA_hdd(inputTar,
-                   inSBML,
+        runFBA_hdd(input_tar,
+                   full_sbml,
                    outputTar,
                    str(params['sim_type']),
-                   list(params['reactions']),
-                   list(params['coefficients']),
-                   bool(params['isMax']),
+                   str(params['source_reaction']),
+                   str(params['target_reaction']),
+                   float(params['source_coefficient']),
+                   float(params['target_coefficient']),
+                   bool(params['is_max']),
                    float(params['fraction_of']),
-                   bool(params['dontMerge']),
+                   bool(params['dont_merge']),
                    str(params['pathway_id']),
                    bool(params['fill_orphan_species']),
                    str(params['compartment_id']))

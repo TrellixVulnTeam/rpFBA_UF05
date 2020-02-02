@@ -18,7 +18,7 @@ docker build -t brsynth/rpfba-rest -f Dockerfile .
 Run the service
 
 ```
-docker run -p 8888:8888 brsynth/rpfba-rest
+docker run -p 8884:8888 brsynth/rpfba-rest
 ```
 
 ## Running the tests
