@@ -10,11 +10,6 @@ import io
 import tarfile
 import glob
 import logging
-
-import json
-from datetime import datetime
-from flask import Flask, request, jsonify, send_file, abort
-from flask_restful import Resource, Api
 import tempfile
 
 sys.path.insert(0, '/home/')
@@ -233,13 +228,13 @@ def singleFBA_hdd(fileName,
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
-        rpfba.runFractionReaction(source_reaction, target_reactions, fraction_of, pathway_id)
+        rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of, pathway_id)
     ####### FBA ########
     elif sim_type=='fba':
         rpfba.runFBA(target_reaction, isMax, pathway_id)
     ####### pFBA #######
     elif sim_type=='pfba':
-        rpfba.runParsimoniousFBA(targetreaction, fraction_of, isMax, pathway_id)
+        rpfba.runParsimoniousFBA(target_reaction, fraction_of, isMax, pathway_id)
     else:
         logging.error('Cannot recognise sim_type: '+str(sim_type))    
     '''
@@ -301,18 +296,6 @@ def runFBA_hdd(inputTar,
                pathway_id='rp_pathway',
                fill_orphan_species=False,
                compartment_id='MNXC3'):
-    print('######## runFBA_hdd ########')
-    print(sim_type)
-    print(source_reaction)
-    print(target_reaction)
-    print(source_coefficient)
-    print(target_coefficient)
-    print(isMax)
-    print(fraction_of)
-    print(dontMerge)
-    print(pathway_id)
-    print(fill_orphan_species)
-    print(compartment_id)
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
             tar = tarfile.open(fileobj=inputTar, mode='r:xz')
@@ -345,82 +328,40 @@ def runFBA_hdd(inputTar,
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
 
 
-#######################################################
-############## REST ###################################
-#######################################################
+def main(input_path, 
+         full_sbml_path, 
+         output_path, 
+         sim_type, 
+         source_reaction, 
+         target_reaction, 
+         source_coefficient, 
+         target_coefficient, 
+         is_max, 
+         fraction_of, 
+         dont_merge, 
+         pathway_id, 
+         fill_orphan_species,
+         compartment_id):
+    with open(input_path, 'rb') as input_bytes:
+        with open(full_sbml_path, 'rb') as full_sbml_bytes:
+            outputTar_obj = io.BytesIO()
+            runFBA_hdd(input_bytes,
+                       full_sbml_bytes,
+                       outputTar_obj,
+                       str(sim_type),
+                       str(source_reaction),
+                       str(target_reaction),
+                       float(source_coefficient),
+                       float(target_coefficient),
+                       bool(is_max),
+                       float(fraction_of),
+                       bool(dont_merge),
+                       str(pathway_id),
+                       bool(fill_orphan_species),
+                       str(compartment_id))
+            ########## IMPORTANT #####
+            outputTar_obj.seek(0)
+            ##########################
+            with open(output_path, 'wb') as f:
+                shutil.copyfileobj(outputTar_obj, f, length=131072)
 
-
-app = Flask(__name__)
-api = Api(app)
-
-
-def stamp(data, status=1):
-    appinfo = {'app': 'rpFBA', 'version': '1.0',
-               'author': 'Melchior du Lac',
-               'organization': 'BRS',
-               'time': datetime.now().isoformat(),
-               'status': status}
-    out = appinfo.copy()
-    out['data'] = data
-    return out
-
-
-class RestApp(Resource):
-    """ REST App."""
-    def post(self):
-        return jsonify(stamp(None))
-    def get(self):
-        return jsonify(stamp(None))
-
-
-class RestQuery(Resource):
-    """ REST interface that generates the Design.
-        Avoid returning numpy or pandas object in
-        order to keep the client lighter.
-    """
-    def post(self):
-        input_tar = request.files['input_tar']
-        full_sbml = request.files['full_sbml']
-        params = json.load(request.files['data'])
-        #pass the files to the rpReader
-        outputTar = io.BytesIO()
-        #### MEM ####
-        '''
-        runFBA_mem(inputTar,
-                   inSBML,
-                   outputTar,
-                   str(params['source_reaction']),
-                   str(params['target_reaction']),
-                   float(params['fraction_of_source'])
-                   bool(params['dontMerge']),
-                   str(params['pathway_id']),
-                   bool(params['fill_orphan_species']),
-                   str(params['compartment_id']))
-        '''
-        #### HDD ####
-        runFBA_hdd(input_tar,
-                   full_sbml,
-                   outputTar,
-                   str(params['sim_type']),
-                   str(params['source_reaction']),
-                   str(params['target_reaction']),
-                   float(params['source_coefficient']),
-                   float(params['target_coefficient']),
-                   bool(params['is_max']),
-                   float(params['fraction_of']),
-                   bool(params['dont_merge']),
-                   str(params['pathway_id']),
-                   bool(params['fill_orphan_species']),
-                   str(params['compartment_id']))
-        ###### IMPORTANT ######
-        outputTar.seek(0)
-        #######################
-        return send_file(outputTar, as_attachment=True, attachment_filename='rpFBA.tar', mimetype='application/x-tar')
-
-
-api.add_resource(RestApp, '/REST')
-api.add_resource(RestQuery, '/REST/Query')
-
-
-if __name__== "__main__":
-    app.run(host="0.0.0.0", port=8888, debug=True, threaded=True)
