@@ -11,6 +11,7 @@ import tarfile
 import glob
 import logging
 import tempfile
+import shutil
 
 sys.path.insert(0, '/home/')
 import rpTool as rpFBA
