@@ -212,7 +212,7 @@ class rpFBA:
         #target_obj_id = str(target_reaction)+'__restricted_'+str(source_reaction)
         #self.rpsbml.createMultiFluxObj(str(target_reaction)+'__restricted_'+str(source_reaction), ['RP1_sink'], [1])
         if not objective_id:
-            objective_id = self.rpsbml.createMultiFluxObj(str(target_reaction)+'__restricted_'+str(source_reaction), ['RP1_sink'], [1])
+            objective_id = self.rpsbml.createMultiFluxObj('obj_'+str(target_reaction)+'__restricted_'+str(source_reaction), ['RP1_sink'], [1])
         else:
             self.rpsbml.createMultiFluxObj(objective_id, ['RP1_sink'], [1])
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
