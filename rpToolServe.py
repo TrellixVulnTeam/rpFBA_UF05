@@ -9,12 +9,13 @@ import os
 import io
 import tarfile
 import glob
+import logging
 import tempfile
 import shutil
-import logging
 
 sys.path.insert(0, '/home/')
 import rpTool as rpFBA
+
 import rpSBML
 
 ###################################################################################
@@ -134,12 +135,23 @@ def processify(func):
 #
 #
 @processify
-def singleFBA_mem(member_name, rpsbml_string, inModel_string, dontMerge, pathway_id, fill_orphan_species, compartment_id):
+def singleFBA_mem(fileName,
+                  sbml_path,
+                  inModel_string,
+                  source_reaction,
+                  target_reaction,
+                  fraction_of_source,
+                  tmpOutputFolder,
+                  dontMerge,
+                  pathway_id,
+                  fill_orphan_species,
+                  compartment_id):
     rpsbml = rpSBML.rpSBML(member_name, libsbml.readSBMLFromString(rpsbml_string))
     input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
     rpsbml.mergeModels(input_rpsbml, pathway_id, fill_orphan_species, compartment_id)
     rpfba = rpFBA.rpFBA(input_rpsbml)
-    rpfba.allObj(pathway_id)
+    #rpfba.allObj(pathway_id)
+    rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of_source, pathway_id)
     if dontMerge:
         ##### pass FBA results to the original model ####
         groups = rpfba.rpsbml.model.getPlugin('groups')
@@ -199,8 +211,10 @@ def singleFBA_hdd(fileName,
                   sbml_path,
                   inModel_string,
                   sim_type,
-                  reactions,
-                  coefficients,
+                  source_reaction,
+                  target_reaction,
+                  source_coefficient,
+                  target_coefficient,
                   isMax,
                   fraction_of,
                   tmpOutputFolder,
@@ -215,18 +229,20 @@ def singleFBA_hdd(fileName,
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
-        rpfba.runFractionReaction(reactions[0], reactions[1], fraction_of, pathway_id)
+        rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of, pathway_id)
     ####### FBA ########
     elif sim_type=='fba':
-        rpfba.runFBA(reactions[0], isMax, pathway_id)
+        rpfba.runFBA(target_reaction, isMax, pathway_id)
     ####### pFBA #######
     elif sim_type=='pfba':
-        rpfba.runParsimoniousFBA(reactions[0], fraction_of, isMax, pathway_id)
+        rpfba.runParsimoniousFBA(target_reaction, fraction_of, isMax, pathway_id)
+    else:
+        logging.error('Cannot recognise sim_type: '+str(sim_type))    
+    '''
     ###### multi objective #####
     elif sim_type=='multi_fba':
         rpfba.runMultiObjective(reactions, coefficients, isMax, pathway_id)
-    else:
-        logging.error('Cannot recognise sim_type: '+str(sim_type))
+    '''
     if dontMerge:
         groups = rpfba.rpsbml.model.getPlugin('groups')
         rp_pathway = groups.getGroup(pathway_id)
@@ -271,8 +287,10 @@ def runFBA_hdd(inputTar,
                inModel_bytes,
                outputTar,
                sim_type,
-               reactions,
-               coefficients,
+               source_reaction,
+               target_reaction,
+               source_coefficient,
+               target_coefficient,
                isMax,
                fraction_of,
                dontMerge,
@@ -292,10 +310,12 @@ def runFBA_hdd(inputTar,
                               sbml_path,
                               inModel_string,
                               sim_type,
-                              reactions,
-                              coefficients,
+                              source_reaction,
+                              target_reaction,
+                              source_coefficient,
+                              target_coefficient,
                               isMax,
-                              float(fraction_of),
+                              fraction_of,
                               tmpOutputFolder,
                               dontMerge,
                               pathway_id,
@@ -309,50 +329,40 @@ def runFBA_hdd(inputTar,
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
 
 
-##
-#
-#
-def main(inputTar,
-         inSBML,
-         outputTar,
-         sim_type,
-         reactions,
-         coefficients,
-         isMax,
-         fraction_of,
-         dontMerge,
-         pathway_id,
+def main(input_path, 
+         full_sbml_path, 
+         output_path, 
+         sim_type, 
+         source_reaction, 
+         target_reaction, 
+         source_coefficient, 
+         target_coefficient, 
+         is_max, 
+         fraction_of, 
+         dont_merge, 
+         pathway_id, 
          fill_orphan_species,
          compartment_id):
-    with open(inputTar, 'rb') as inputTar_bytes:
-        with open(inSBML, 'rb') as inSBML_bytes:
-            #pass the files to the rpReader
-            outputTar_bytes = io.BytesIO()
-            #### MEM ####
-            '''
-            runFBA_mem(inputTar_bytes,
-                       inSBML_bytes,
-                       outputTar,
-                       dontMerge,
-                       pathway_id,
-                       fill_orphan_species,
-                       compartment_id)
-            '''
-            #### HDD ####
-            runFBA_hdd(inputTar_bytes,
-                       inSBML_bytes,
-                       outputTar_bytes,
-                       sim_type,
-                       reactions,
-                       coefficients,
-                       isMax,
+    with open(input_path, 'rb') as input_bytes:
+        with open(full_sbml_path, 'rb') as full_sbml_bytes:
+            outputTar_obj = io.BytesIO()
+            runFBA_hdd(input_bytes,
+                       full_sbml_bytes,
+                       outputTar_obj,
+                       str(sim_type),
+                       str(source_reaction),
+                       str(target_reaction),
+                       float(source_coefficient),
+                       float(target_coefficient),
+                       bool(is_max),
                        float(fraction_of),
-                       dontMerge,
-                       pathway_id,
-                       fill_orphan_species,
-                       compartment_id)
+                       bool(dont_merge),
+                       str(pathway_id),
+                       bool(fill_orphan_species),
+                       str(compartment_id))
             ########## IMPORTANT #####
-            outputTar_bytes.seek(0)
+            outputTar_obj.seek(0)
             ##########################
-            with open(outputTar, 'wb') as f:
-                shutil.copyfileobj(outputTar_bytes, f, length=131072)
+            with open(output_path, 'wb') as f:
+                shutil.copyfileobj(outputTar_obj, f, length=131072)
+
