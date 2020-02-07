@@ -79,6 +79,7 @@ class rpFBA:
         self._checklibSBML(rp_pathway, 'Getting RP pathway')
         #write the results to the rp_pathway
         self.rpsbml.addUpdateBRSynth(rp_pathway, 'fba_'+str(objective_id), str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
+        #findCreateObjective(self, reactions, coefficients, isMax=True, objective_id=None)
         #get the objective
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC plugin')
@@ -160,7 +161,7 @@ class rpFBA:
     def runParsimoniousFBA(self, reaction_id, fraction_of_optimum=0.95, isMax=True, pathway_id='rp_pathway'):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], isMax)
+        objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], isMax, 'obj_parsFBA_'+str(reaction_id))
         #run the FBA
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
@@ -203,7 +204,7 @@ class rpFBA:
             source_flux = float(fbc_obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
         #set bounds biomass as a fraction
         target_obj_id = str(target_reaction)+'__restricted_'+str(source_reaction)
-        self.rpsbml.createMultiFluxObj(str(target_reaction)+'__restricted_'+str(source_reaction), ['RP1_sink'], [1])
+        self.rpsbml.createMultiFluxObj('obj_'+str(target_reaction)+'__restricted_'+str(source_reaction), ['RP1_sink'], [1])
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               source_flux*fraction_of_source,
                                                                               source_flux*fraction_of_source)
