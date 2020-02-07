@@ -150,7 +150,7 @@ class rpFBA:
                 'Setting active objective '+str(objective_id))
         self._convertToCobra()
         cobra_results = self.cobraModel.optimize()
-        selfwriteAnalysisResults(objective_id, cobra_results, pathway_id)
+        self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
         return cobra_results.objective_value
 
 
