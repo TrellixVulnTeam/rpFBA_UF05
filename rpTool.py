@@ -112,7 +112,7 @@ class rpFBA:
                           objective_id=None):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        objective_id = self.rpsbml.findCreateObjective(reactions, coefficients, isMax, objective_id)
+        objective_id = self.rpsbml.findCreateObjective(reactions, coefficients, isMax)
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
         self._convertToCobra()
