@@ -142,7 +142,7 @@ class rpFBA:
     ##
     #
     #
-    def runFBA(self, reaction_id, isMax=True, pathway_id='rp_pathway', objective_id='obj_rpFBA'):
+    def runFBA(self, reaction_id, isMax=True, pathway_id='rp_pathway', objective_id=None):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
         if not objective_id:
@@ -161,7 +161,7 @@ class rpFBA:
     ##
     #
     #
-    def runParsimoniousFBA(self, reaction_id, fraction_of_optimum=0.95, isMax=True, pathway_id='rp_pathway', objective_id='obj_rpFBA_pars'):
+    def runParsimoniousFBA(self, reaction_id, fraction_of_optimum=0.95, isMax=True, pathway_id='rp_pathway', objective_id=None):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
         if not objective_id:
@@ -180,7 +180,7 @@ class rpFBA:
     ## Optimise for a target reaction while fixing a source reaction to the fraction of its optimum
     #
     #
-    def runFractionReaction(self, source_reaction, target_reaction, fraction_of_source=0.75, isMax=True, pathway_id='rp_pathway', objective_id='obj_rpFBA_frac'):
+    def runFractionReaction(self, source_reaction, target_reaction, fraction_of_source=0.75, isMax=True, pathway_id='rp_pathway', objective_id=None):
         #retreive the biomass objective and flux results and set as maxima
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
@@ -211,18 +211,20 @@ class rpFBA:
         #set bounds biomass as a fraction
         #target_obj_id = str(target_reaction)+'__restricted_'+str(source_reaction)
         #self.rpsbml.createMultiFluxObj(str(target_reaction)+'__restricted_'+str(source_reaction), ['RP1_sink'], [1])
+        #TODO: add another to check if the objective id exists
         if not objective_id:
-            objective_id = self.rpsbml.createMultiFluxObj('obj_'+str(target_reaction)+'__restricted_'+str(source_reaction), ['RP1_sink'], [1])
+            objective_id = 'obj_'+str(target_reaction)+'__restricted_'+str(source_reaction)
+            self.rpsbml.createMultiFluxObj(objective_id, ['RP1_sink'], [1])
         else:
             self.rpsbml.createMultiFluxObj(objective_id, ['RP1_sink'], [1])
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               source_flux*fraction_of_source,
                                                                               source_flux*fraction_of_source)
-        self._checklibSBML(fbc_plugin.setActiveObjectiveId(target_obj_id),
-                'Setting active objective '+str(target_obj_id))
+        self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
+                'Setting active objective '+str(objective_id))
         self._convertToCobra()
         cobra_results = self.cobraModel.optimize()
-        self.writeAnalysisResults(target_obj_id, cobra_results, pathway_id)
+        self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
         #reset the bounds to the original values for the target
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               old_upper_bound,
