@@ -229,7 +229,7 @@ def singleFBA_hdd(fileName,
     rpsbml = rpSBML.rpSBML(fileName)
     rpsbml.readSBML(sbml_path)
     input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
-    rpsbml.mergeModels(input_rpsbml, pathway_id, fill_orphan_species, compartment_id)
+    rpsbml.mergeModels(input_rpsbml)
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
