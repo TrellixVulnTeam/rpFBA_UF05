@@ -225,7 +225,7 @@ def singleFBA_hdd(fileName,
     rpsbml = rpSBML.rpSBML(fileName)
     rpsbml.readSBML(sbml_path)
     input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
-    rpsbml.mergeModels(input_rpsbml, pathway_id, fill_orphan_species, compartment_id)
+    rpsbml.mergeModels(input_rpsbml)
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
@@ -341,7 +341,6 @@ def main(input_path,
          fraction_of, 
          dont_merge, 
          pathway_id, 
-         fill_orphan_species,
          compartment_id):
     with open(input_path, 'rb') as input_bytes:
         with open(full_sbml_path, 'rb') as full_sbml_bytes:
@@ -358,7 +357,6 @@ def main(input_path,
                        float(fraction_of),
                        bool(dont_merge),
                        str(pathway_id),
-                       bool(fill_orphan_species),
                        str(compartment_id))
             ########## IMPORTANT #####
             outputTar_obj.seek(0)
