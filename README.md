@@ -12,7 +12,7 @@ REST tool that reads a collection of rpSBML files (in a tar.xz) and a GEM SBML m
 ### Compiling and running
 
 ```
-docker build -t brsynth/rpfba-standalone -f Dockerfile .
+docker build -t brsynth/rpfba-standalone:dev -f Dockerfile .
 ```
 
 ## Running the tests

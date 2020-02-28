@@ -22,6 +22,14 @@ class rpFBA:
     ################# Private Functions ######################
     ##########################################################
 
+    #We do this so that it is not stopping
+    class libSBMLError(Exception):   
+        # Constructor or Initializer 
+        def __init__(self, value): 
+            self.value = value 
+        def __str__(self): 
+            return(repr(self.value)) 
+   
 
     ## Check the libSBML calls
     #
@@ -32,7 +40,8 @@ class rpFBA:
     def _checklibSBML(self, value, message):
         if value is None:
             self.logger.error('LibSBML returned a null value trying to ' + message + '.')
-            raise SystemExit('LibSBML returned a null value trying to ' + message + '.')
+            #raise SystemExit('LibSBML returned a null value trying to ' + message + '.')
+            raise libSBMLError('LibSBML returned a null value trying to ' + message + '.')
         elif type(value) is int:
             if value==libsbml.LIBSBML_OPERATION_SUCCESS:
                 return
@@ -41,9 +50,9 @@ class rpFBA:
                         + 'LibSBML returned error code ' + str(value) + ': "' \
                         + libsbml.OperationReturnValue_toString(value).strip() + '"'
                 self.logger.error(err_msg)
-                raise SystemExit(err_msg)
+                #raise SystemExit(err_msg)
+                raise libSBMLError(err_msg)
         else:
-            #self.logger.info(message)
             return None
 
 

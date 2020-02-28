@@ -220,8 +220,8 @@ def singleFBA_hdd(fileName,
                   tmpOutputFolder,
                   dontMerge,
                   pathway_id,
-                  fill_orphan_species,
-                  compartment_id):
+                  compartment_id,
+                  fill_orphan_species):
     rpsbml = rpSBML.rpSBML(fileName)
     rpsbml.readSBML(sbml_path)
     input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
@@ -295,8 +295,8 @@ def runFBA_hdd(inputTar,
                fraction_of,
                dontMerge,
                pathway_id='rp_pathway',
-               fill_orphan_species=False,
-               compartment_id='MNXC3'):
+               compartment_id='MNXC3',
+               fill_orphan_species=False):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
             tar = tarfile.open(fileobj=inputTar, mode='r:xz')
@@ -319,8 +319,8 @@ def runFBA_hdd(inputTar,
                               tmpOutputFolder,
                               dontMerge,
                               pathway_id,
-                              fill_orphan_species,
-                              compartment_id)
+                              compartment_id,
+                              fill_orphan_species)
             with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
                     fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
