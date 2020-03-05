@@ -1,5 +1,6 @@
 __pycache__/
 rpSBML.py
+OLD/
 tmp/
 .DS_Store
 .ipynb_checkpoints/

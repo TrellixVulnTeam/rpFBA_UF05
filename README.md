@@ -15,6 +15,12 @@ REST tool that reads a collection of rpSBML files (in a tar.xz) and a GEM SBML m
 docker build -t brsynth/rpfba-standalone:dev -f Dockerfile .
 ```
 
+To test the model extract the test.tar and run the following command:
+
+```
+python run.py -input test/test_rpCofactors.tar -input_format tar -full_sbml test/e_coli_model.sbml -output test/test_rpFBA.tar
+```
+
 ## Running the tests
 
 TODO
