@@ -342,6 +342,7 @@ def main(input_path,
          dont_merge, 
          pathway_id, 
          compartment_id):
+    logging.error(input_path)
     with open(input_path, 'rb') as input_bytes:
         with open(full_sbml_path, 'rb') as full_sbml_bytes:
             outputTar_obj = io.BytesIO()
