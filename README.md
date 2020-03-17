@@ -1,76 +1,56 @@
-# rpFBA
+# rpFBA docker
 
-Reads a single or collection of rpSBML files (as a tar.xz) and a GEM SBML model, merges the two and perform FBA. The addition of the heterologous pathway to the organism of choice. FBA is performed with all defined objectives defined by the [FBC](https://co.mbine.org/specifications/sbml.level-3.version-1.fbc.version-2.release-1) SBML package and saved inside custom (BRSynth) annotations. The output is also a collection of rpSBML files in a tar.xz. The merged version of the model may be kept instead of the heterologous pathway alone (default). 
+* Docker Image: [brsynth/rpfba-rest](https://hub.docker.com/r/brsynth/rpfba-rest)
 
-Currently, the following FBA methods have been implemented. FBA, parsimonious FBA and fraction of reaction. The latter forces a source reaction to a fraction of optimum, and then perform FBA using another target reaction.
+Perform FBA on a single or collection of SBML files containing heterologous pathways, as tar.xz archives. The package performs the following steps: 1) it merges a user defined GEM SBML model to a given heterologous pathway. 2) it performs FBA using the [cobrapy](https://opencobra.github.io/cobrapy/) package using a user defined mathod that include, FBA, parsimonious FBA or fraction of optimum of another reaction. For the first two, the user must know the reaction name that the model will optimise to, while the latter the use must provide the target reaction but also another reaction that will be restricted. The first step involves performing FBA using the "source" reaction as the objective. Then the flux of that reaction has its upper and lower bounds set to the same value, determined as a fraction of its FBA flux value. Thereafter the objective is set to the initial target reaction and FBA is performed once again. The tool uses the [FBC](https://co.mbine.org/specifications/sbml.level-3.version-1.fbc.version-2.release-1) package to manage the objective and flux bounds.
 
-## Information Flow
+## Input
 
-### Input
-
-Required information:
-* Fraction of Reaction:
-    * **Fraction of the source reaction**: (default: 0.75) Float between 0.0 and 1.0, with 0.0 being no flux to 1.0 maximum of optimum
-    * **Source Reaction**: (default: biomass) ID of the source reaction
-    * **Source Coefficient**: (default: 1.0) Float determining the FBA coefficient
-    * **Target Reaction**: (default: RP1_sink) ID of the target reaction
-    * **Target Coefficient**: (default: 1.0) Float determining the FBA coefficient
-* Parsimonious FBA:
-    * **Fraction of optimal**: (default: 0.95) 
-    * **Target Reaction**: (default: RP1_sink) ID of the target reaction
-    * **Target Coefficient**: (default: 1.0) Float determining the FBA coefficient
-* FBA:
-    * **Target Reaction**: (default: RP1_sink) ID of the target reaction
-    * **Target Coefficient**: (default: 1.0) Float determining the FBA coefficient
-* **Input/output format**: (default: TAR) Either use TAR collection of files or single rpSBML file
-* **Input GEM SBML model**: SBML model
+Required:
+* **-input**: (string) Path to the input file
+* **-input_format**: (string) Valid options: tar, sbml. Format of the input file
+* **-full_sbml**: (string) Path to the GEM SBML model
 
 Advanced options:
-* **Name of the heterologous pathway**: (default: rp_pathway) Groups ID of the heterologous pathway
-* **Maximise the objective?**: (default: Yes) If set to No, then minimise the objective
-* **Don't output the merged model?**: (default: Yes) If Not then the full merged model is output
-* **IP address of the rpFBA REST service**: IP address of the REST service
-* **Cytoplasm compartment id**: (default: MNXC3) Compartment ID of interest
-* **If there are orphan source species, create creation reaction**: (default: No) NOT SUPPORTED: Upon the merge, if within the heterologous species some are orphaned, then create a reaction that produces that species.
- 
-### Output
+* **-pathway_id**: (string, default=rp_pathway) ID of the heterologous pathway
+* **-compartment_id**: (string, default=MNXC3 (i.e. cytoplasm)) ID of the compartment ID that contains the heterologous pathway
+* **-sim_type**: (string, default=fraction) Valid options include: fraction, fba, pfba. The type of constraint based modelling method 
+* **-source_reaction**: (string, default=biomass) Name of the source reaction that will be restricted in the "fraction" simulation type. This parameter is ignored for "fba" and "pfba"
+* **-target_reaction**: (string, default=RP1_sink) Heterologous pathway flux sink reaction. This parameters is required in all simulation type
+* **-source_coefficient**: (float, default=1.0) Objective coefficient for the source reaction. This parameter is ignored for "fba" and "pfba"
+* **-target_coefficient**: (float, default=1.0) Objective coefficient for the target reaction. 
+* **-is_max**: (boolean, default=True) Maximise or minimise the objective function
+* **-fraction_of**: (float, default=0.75) Portion of the maximal flux used to set the maximal and minimal bounds for the source reaction of the "fraction" simulation type
+* **-dont_merge**: (boolean, default=True) Return the merged GEM+heterologous pathway SBML or only the heterologous pathway SBML files
+* **-server_url**: (string) IP address of the REST server
 
-* **rpFBA**: The output is a tar.xz archive containing a list of rpSBML files or a single SBML file
+## Output
 
-## Algorithm
+* **-output**: (string) Path to the output file
 
-Three different implementations of constraint based simulation are supported with this tool:
-* FBA
-* Parsimonious FBA
-* Fraction of source reaction: In this method, the flux of a source reaction (For example BIOMASS) is calculated using FBA. Thereafter, the maximal and minimal bounds of that reaction is set from a fraction of that obtimum (default is 0.75) and another FBA is performed for a target reaction. In the pipeline the later would be the reaction that produces the target molecule of interest.
-
-## Installing
-
-To build the image using the Dockerfile, use the following image:
+## Building the docker
 
 ```
-docker build -t brsynth/rpfba-rest:dev -f Dockerfile .
+docker build -t brsynth/rpfba-rest -f Dockerfile .
 ```
 
-To run the service on localhost, use the following command:
+To run the service on a localhost as the Galaxy interface, after creating the image run the REST service using the following command:
 
 ```
-docker run -p 8883:8888 brsynth/rpfba-rest:dev
+docker run -p 8888:8888 brsynth/rpfba-rest:dev
 ```
 
-## Prerequisites
+## Dependencies
 
-* Docker - [Install](https://docs.docker.com/v17.09/engine/installation/)
-* libSBML - [Anaconda library](https://anaconda.org/SBMLTeam/python-libsbml)
-* cobrapy - [CobaraPy](https://github.com/opencobra/cobrapy)
+* Base docker image: [brsynth/rprest](https://hub.docker.com/r/brsynth/rprest)
 
 ## Contributing
 
-TODO
+Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
-Version 0.1
+v0.1
 
 ## Authors
 
@@ -84,7 +64,3 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 * Thomas Duigou
 * Joan Hérisson
-
-### How to cite rpFBA?
-
-TODO
