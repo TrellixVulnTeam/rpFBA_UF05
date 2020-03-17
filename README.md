@@ -1,4 +1,4 @@
-# rpFBA docker
+# rpFBA
 
 * Docker Image: [brsynth/rpfba-rest](https://hub.docker.com/r/brsynth/rpfba-rest)
 
