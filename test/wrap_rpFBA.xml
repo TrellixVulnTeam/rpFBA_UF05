@@ -1,0 +1,83 @@
+<tool id="rpFBA" name="RP FBA" version="1.0">
+	<description>Calculate the FBA for the RetroPath2.0 heterologous pathway</description>
+  <requirements>
+		<requirement type="package">requests</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+		'$__tool_directory__/tool_rpFBA.py' -inputTar '$inputTar' -outputTar '$outputTar' -inSBML '$inSBML' -dontMerge '$adv.dontMerge' -pathway_id '$adv.pathway_id' -server_url '$adv.server_url' -compartment_id '$adv.compartment_id' -fill_orphan_species '$adv.fill_orphan_species' -reactions '$reactions' -sim_type '$sim_type' -fraction_of '$adv.fraction_of' -isMax '$adv.isMax'
+  ]]></command>
+  <inputs>
+    <conditional name="input_type">
+      <param name="sim_type" type="select" label="Choose the constraint based simulation type">
+        <option value="fraction" selected="true">Fraction of Reaction</option>
+        <option value="fba">FBA</option>
+        <option value="pfba">Parsimonious FBA</option>
+        <option value="multi_fba">Multi-Objective FBA</option>
+      </param>
+      <when value="fraction">
+        <param name="inputTar" type="data" format="tar" label="Tar collection of rpSBML" />
+        <param name="inSBML" type="data" format="sbml" label="Input GEM SBML model" />
+        <param name="sim_type" type="text" value="fraction" label="Simulation type" />
+        <param name="reactions" type="text" value="biomass RP1_sink" label="Source Reaction,Target Reaction" />
+        <section name="adv" title="Advanced Options" expanded="false">
+          <param name="pathway_id" type="text" value="rp_pathway" label="Name of the heterologous pathway" />
+          <param name="fraction_of" type="float" value="0.95" label="Fraction of the source reaction" />
+          <param name="isMax" type="boolean" truevalue="True" falsevalue="False" checked="true" label="Maximise or minimise the objective" />
+          <param name="dontMerge" type="boolean" truevalue="True" falsevalue="False" checked="true" label="Don't output the merged model" />
+          <param name="server_url" type="text" value="http://rpfba_rest-v1.0:8888/REST" label="IP address of the rpFBA REST service" />
+          <param name="compartment_id" type="text" value="MNXC3" label="Cytoplasm compartment id" />
+          <param name="fill_orphan_species" type="boolean" truevalue="True" falsevalue="False" checked="false" label="If there are orphan source species, create creation reaction" />
+        </section>
+      </when>
+      <when value="fba">
+        <param name="inputTar" type="data" format="tar" label="Tar collection of rpSBML" />
+        <param name="inSBML" type="data" format="sbml" label="Input GEM SBML model" />
+        <param name="sim_type" type="text" value="fba" label="Simulation type" />
+        <param name="reactions" type="text" value="RP1_sink" label="Target Reaction" />
+        <section name="adv" title="Advanced Options" expanded="false">
+          <param name="pathway_id" type="text" value="rp_pathway" label="Name of the heterologous pathway" />
+          <param name="isMax" type="boolean" truevalue="True" falsevalue="False" checked="true" label="Maximise or minimise the objective" />
+          <param name="dontMerge" type="boolean" truevalue="True" falsevalue="False" checked="true" label="Don't output the merged model" />
+          <param name="server_url" type="text" value="http://rpfba_rest-v1.0:8888/REST" label="IP address of the rpFBA REST service" />
+          <param name="compartment_id" type="text" value="MNXC3" label="Cytoplasm compartment id" />
+          <param name="fill_orphan_species" type="boolean" truevalue="True" falsevalue="False" checked="false" label="If there are orphan source species, create creation reaction" />
+        </section>
+      </when>
+      <when value="pfba">
+        <param name="inputTar" type="data" format="tar" label="Tar collection of rpSBML" />
+        <param name="inSBML" type="data" format="sbml" label="Input GEM SBML model" />
+        <param name="sim_type" type="text" value="pfba" label="Simulation type" />
+        <param name="reactions" type="text" value="RP1_sink" label="Target Reaction" />
+        <section name="adv" title="Advanced Options" expanded="false">
+          <param name="pathway_id" type="text" value="rp_pathway" label="Name of the heterologous pathway" />
+          <param name="fraction_of" type="float" value="0.75" label="Fraction of Optimum" />
+          <param name="isMax" type="boolean" truevalue="True" falsevalue="False" checked="true" label="Maximise or minimise the objective" />
+          <param name="dontMerge" type="boolean" truevalue="True" falsevalue="False" checked="true" label="Don't output the merged model" />
+          <param name="server_url" type="text" value="http://rpfba_rest-v1.0:8888/REST" label="IP address of the rpFBA REST service" />
+          <param name="compartment_id" type="text" value="MNXC3" label="Cytoplasm compartment id" />
+          <param name="fill_orphan_species" type="boolean" truevalue="True" falsevalue="False" checked="false" label="If there are orphan source species, create creation reaction" />
+        </section>
+      </when>
+      <when value="multi_fba">
+        <param name="inputTar" type="data" format="tar" label="Tar collection of rpSBML" />
+        <param name="inSBML" type="data" format="sbml" label="Input GEM SBML model" />
+        <param name="sim_type" type="text" value="multi_fba" label="Simulation type" />
+        <param name="reactions" type="text" value="biomass RP1_sink" label="Source Reaction,Target Reaction" />
+        <section name="adv" title="Advanced Options" expanded="false">
+          <param name="pathway_id" type="text" value="rp_pathway" label="Name of the heterologous pathway" />
+          <param name="isMax" type="boolean" truevalue="True" falsevalue="False" checked="true" label="Maximise or minimise the objective" />
+          <param name="dontMerge" type="boolean" truevalue="True" falsevalue="False" checked="true" label="Don't output the merged model" />
+          <param name="server_url" type="text" value="http://rpfba_rest-v1.0:8888/REST" label="IP address of the rpFBA REST service" />
+          <param name="compartment_id" type="text" value="MNXC3" label="Cytoplasm compartment id" />
+          <param name="fill_orphan_species" type="boolean" truevalue="True" falsevalue="False" checked="false" label="If there are orphan source species, create creation reaction" />
+        </section>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data name="outputTar" format="tar" label="rpSBML FBA" />
+  </outputs>
+  <help>
+   This is the help section. Should really write something usefull here :)
+  </help>
+</tool>
