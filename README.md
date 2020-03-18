@@ -27,6 +27,10 @@ Advanced options:
 
 * **-output**: (string) Path to the output file
 
+## Dependencies
+
+* Base docker image: [brsynth/rpBase](https://hub.docker.com/r/brsynth/rpbase)
+
 ## Building the docker
 
 ```
@@ -40,10 +44,6 @@ To test the model extract the test.tar and run the following command:
 ```
 python run.py -input test/test_rpCofactors.tar -input_format tar -full_sbml test/e_coli_model.sbml -output test/test_rpFBA.tar
 ```
-
-## Dependencies
-
-* Base docker image: [brsynth/rpBase](https://hub.docker.com/r/brsynth/rpbase)
 
 ## Contributing
 
