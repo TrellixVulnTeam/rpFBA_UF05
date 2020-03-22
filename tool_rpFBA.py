@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument('-target_reaction', type=str, default='RP1_sink')
     parser.add_argument('-source_coefficient', type=float, default=1.0)
     parser.add_argument('-target_coefficient', type=float, default=1.0)
-    parser.add_argument('-is_max', type=bool, default=True)
+    parser.add_argument('-is_max', type=str, default=True)
     parser.add_argument('-fraction_of', type=float, default=0.75)
     parser.add_argument('-dont_merge', type=bool, default=True)
     params = parser.parse_args()
@@ -61,9 +61,9 @@ if __name__ == "__main__":
                          params.target_reaction,
                          params.source_coefficient,
                          params.target_coefficient,
-                         isMax,
+                         is_max,
                          params.fraction_of,
-                         dontMerge,
+                         dont_merge,
                          params.pathway_id,
                          params.compartment_id)
     elif params.input_format=='sbml': 
@@ -84,9 +84,9 @@ if __name__ == "__main__":
                              params.target_reaction,
                              params.source_coefficient,
                              params.target_coefficient,
-                             isMax,
+                             is_max,
                              params.fraction_of,
-                             dontMerge,
+                             dont_merge,
                              params.pathway_id,
                              params.compartment_id)
             with tarfile.open(output_tar) as outTar:

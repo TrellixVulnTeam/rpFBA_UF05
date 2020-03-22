@@ -121,6 +121,6 @@ if __name__ == "__main__":
          params.target_reaction,
          params.source_coefficient,
          params.target_coefficient,
-         is_max,
+         params.is_max,
          params.fraction_of,
-         dont_merge)
+         params.dont_merge)
