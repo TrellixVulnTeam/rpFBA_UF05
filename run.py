@@ -21,16 +21,16 @@ def main(inputfile,
          input_format,
          full_sbml,
          output,
-         pathway_id,
-         compartment_id,
-         sim_type,
-         source_reaction,
-         target_reaction,
-         source_coefficient,
-         target_coefficient,
-         is_max,
-         fraction_of,
-         dont_merge):
+         pathway_id='rp_pathway',
+         compartment_id='MNXC3',
+         sim_type='fraction',
+         source_reaction='biomass',
+         target_reaction='RP1_sink',
+         source_coefficient=1.0,
+         target_coefficient=1.0,
+         is_max=True,
+         fraction_of=0.75,
+         dont_merge=True):
     docker_client = docker.from_env()
     image_str = 'brsynth/rpfba-standalone:dev'
     try:
@@ -75,12 +75,19 @@ def main(inputfile,
                    str(compartment_id),
                    '-input_format',
                    str(input_format)]
-        docker_client.containers.run(image_str, 
-                command, 
-                auto_remove=True, 
-                detach=False, 
-                volumes={tmpOutputFolder+'/': {'bind': '/home/tmp_output', 'mode': 'rw'}})
-        shutil.copy(tmpOutputFolder+'/output.dat', output)
+        container = docker_client.containers.run(image_str, 
+                                                 command, 
+                                                 detach=True, 
+                                                 stderr=True,
+                                                 volumes={tmpOutputFolder+'/': {'bind': '/home/tmp_output', 'mode': 'rw'}})
+        container.wait()
+        err = container.logs(stdout=False, stderr=True)
+        err_str = err.decode('utf-8')
+        print(err_str)
+        if not 'ERROR' in err_str:
+            shutil.copy(tmpOutputFolder+'/output.dat', output)
+        container.remove()
+
 
 
 ##
