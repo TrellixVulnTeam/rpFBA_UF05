@@ -32,18 +32,26 @@ if __name__ == "__main__":
     parser.add_argument('-target_reaction', type=str, default='RP1_sink')
     parser.add_argument('-source_coefficient', type=float, default=1.0)
     parser.add_argument('-target_coefficient', type=float, default=1.0)
-    parser.add_argument('-is_max', type=bool, default=True)
+    parser.add_argument('-is_max', type=str, default=True)
     parser.add_argument('-fraction_of', type=float, default=0.75)
     parser.add_argument('-dont_merge', type=bool, default=True)
     params = parser.parse_args()
-    if params.is_max=='True' or params.is_max=='true' or params.is_max==True:
-        isMax = True
-    elif params.is_max=='False' or params.is_max=='false' or params.is_max==False:
-        isMax = False
-    if params.dont_merge=='True' or params.dont_merge=='true' or params.dont_merge==True:
-        dontMerge = True
-    elif params.dont_merge=='False' or params.dont_merge=='false' or params.dont_merge==False:
-        dontMerge = False
+    if params.fraction_of<=0.0:
+        logging.error('Cannot have -fraction_of less or equal than 0: '+str(params.fraction_of))
+    if params.is_max==True or params.is_max=='True' or params.is_max=='true':
+        is_max = True
+    elif params.is_max==False or params.is_max=='False' or params.is_max=='false':
+        is_max = False
+    else:
+        logging.error('Cannot interpret '+str(params.is_max))
+        exit(1)
+    if params.dont_merge==True or params.dont_merge=='True' or params.dont_merge=='true':
+        dont_merge = True
+    elif params.dont_merge==False or params.dont_merge=='False' or params.dont_merge=='false':
+        dont_merge = False
+    else:
+        logging.error('Cannot interpret '+str(params.dont_merge))
+        exit(1)
     if params.input_format=='tar': 
         rpToolServe.main(params.input,
                          params.full_sbml,
@@ -53,9 +61,9 @@ if __name__ == "__main__":
                          params.target_reaction,
                          params.source_coefficient,
                          params.target_coefficient,
-                         isMax,
+                         is_max,
                          params.fraction_of,
-                         dontMerge,
+                         dont_merge,
                          params.pathway_id,
                          params.compartment_id)
     elif params.input_format=='sbml': 
@@ -76,9 +84,9 @@ if __name__ == "__main__":
                              params.target_reaction,
                              params.source_coefficient,
                              params.target_coefficient,
-                             isMax,
+                             is_max,
                              params.fraction_of,
-                             dontMerge,
+                             dont_merge,
                              params.pathway_id,
                              params.compartment_id)
             with tarfile.open(output_tar) as outTar:

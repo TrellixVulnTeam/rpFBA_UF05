@@ -22,14 +22,6 @@ class rpFBA:
     ################# Private Functions ######################
     ##########################################################
 
-    #We do this so that it is not stopping
-    class libSBMLError(Exception):   
-        # Constructor or Initializer 
-        def __init__(self, value): 
-            self.value = value 
-        def __str__(self): 
-            return(repr(self.value)) 
-   
 
     ## Check the libSBML calls
     #
@@ -40,8 +32,7 @@ class rpFBA:
     def _checklibSBML(self, value, message):
         if value is None:
             self.logger.error('LibSBML returned a null value trying to ' + message + '.')
-            #raise SystemExit('LibSBML returned a null value trying to ' + message + '.')
-            raise libSBMLError('LibSBML returned a null value trying to ' + message + '.')
+            raise AttributeError
         elif type(value) is int:
             if value==libsbml.LIBSBML_OPERATION_SUCCESS:
                 return
@@ -50,8 +41,7 @@ class rpFBA:
                         + 'LibSBML returned error code ' + str(value) + ': "' \
                         + libsbml.OperationReturnValue_toString(value).strip() + '"'
                 self.logger.error(err_msg)
-                #raise SystemExit(err_msg)
-                raise libSBMLError(err_msg)
+                raise AttributeError
         else:
             return None
 
@@ -83,6 +73,7 @@ class rpFBA:
         self._checklibSBML(groups, 'Getting groups plugin')
         rp_pathway = groups.getGroup(pathway_id)
         if rp_pathway==None:
+            self.logger.warning('The group '+str(pathway_id)+' does not exist... creating it')
             self.rpsbml.createPathway(pathway_id)
             rp_pathway = groups.getGroup(pathway_id)
         self._checklibSBML(rp_pathway, 'Getting RP pathway')
@@ -101,7 +92,8 @@ class rpFBA:
             reac = self.rpsbml.model.getReaction(member.getIdRef())
             if reac==None:
                 self.logger.error('Cannot retreive the following reaction: '+str(member.getIdRef()))
-                return False
+                #return False
+                continue
             self.rpsbml.addUpdateBRSynth(reac, 'fba_'+str(objective_id), str(cobra_results.fluxes.get(reac.getId())), 'mmol_per_gDW_per_hr', False)
 
 
@@ -129,24 +121,6 @@ class rpFBA:
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
 
 
-    '''
-    ##
-    #
-    #
-    def runAllParsimoniousFBA(self, fraction_of_optimum=0.95, pathway_id='rp_pathway'):
-        fbc_plugin = self.rpsbml.model.getPlugin('fbc')
-        for obj in fbc_plugin.getListOfObjectives():
-            self.runParsimoniousFBA(obj.getId(), fraction_of_optimum, pathway_id)
-
-
-    ## 
-    #
-    #
-    def runAllFBA(self, pathway_id='rp_pathway'):
-        fbc_plugin = self.rpsbml.model.getPlugin('fbc')
-        for obj in fbc_plugin.getListOfObjectives():
-            self.runFBA(obj.getId(), pathway_id)
-    '''
 
     ##
     #
@@ -217,9 +191,6 @@ class rpFBA:
                 self.logger.error('There is an error getting the flux for source objective: '+str(source_reaction))
                 return 0.0
             source_flux = float(fbc_obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
-        #set bounds biomass as a fraction
-        #target_obj_id = str(target_reaction)+'__restricted_'+str(source_reaction)
-        #self.rpsbml.createMultiFluxObj(str(target_reaction)+'__restricted_'+str(source_reaction), ['RP1_sink'], [1])
         #TODO: add another to check if the objective id exists
         if not objective_id:
             objective_id = 'obj_'+str(target_reaction)+'__restricted_'+str(source_reaction)

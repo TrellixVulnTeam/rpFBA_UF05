@@ -24,9 +24,15 @@ import rpSBML
 
 import inspect
 import traceback
-
+import signal
 from functools import wraps
 from multiprocessing import Process, Queue
+
+'''
+This is to deal with an error caused by Cobrapy segmentation fault
+'''
+def handler(signum, frame):
+    raise OSError('CobraPy is throwing a segmentation fault')
 
 
 class Sentinel:
@@ -76,6 +82,8 @@ def processify(func):
         process_func.__name__ = func.__name__ + 'processify_func'
         setattr(sys.modules[__name__], process_func.__name__, process_func)
 
+        signal.signal(signal.SIGCHLD, handler) #This is to catch the segmentation error
+
         q = Queue()
         p = Process(target=process_func, args=[q] + list(args), kwargs=kwargs)
         p.start()
@@ -94,6 +102,8 @@ def processify(func):
         # in sys.modules so it is pickable
         process_generator_func.__name__ = func.__name__ + 'processify_generator_func'
         setattr(sys.modules[__name__], process_generator_func.__name__, process_generator_func)
+
+        signal.signal(signal.SIGCHLD, handler) #This is to catch the segmentation error
 
         q = Queue()
         p = Process(target=process_generator_func, args=[q] + list(args), kwargs=kwargs)
@@ -128,78 +138,6 @@ def processify(func):
 
 #hack to stop the memory leak. Indeed it seems that looping through rpFBA and the rest causes a memory leak... According to: https://github.com/opencobra/cobrapy/issues/568 there is still memory leak issues with cobrapy. looping through hundreds of models and running FBA may be the culprit
 
-########################## use RAM ######################
-"""
-'''
-##
-#
-#
-@processify
-def singleFBA_mem(fileName,
-                  sbml_path,
-                  inModel_string,
-                  source_reaction,
-                  target_reaction,
-                  fraction_of_source,
-                  tmpOutputFolder,
-                  dontMerge,
-                  pathway_id,
-                  fill_orphan_species,
-                  compartment_id):
-    rpsbml = rpSBML.rpSBML(member_name, libsbml.readSBMLFromString(rpsbml_string))
-    input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
-    rpsbml.mergeModels(input_rpsbml, pathway_id, fill_orphan_species, compartment_id)
-    rpfba = rpFBA.rpFBA(input_rpsbml)
-    #rpfba.allObj(pathway_id)
-    rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of_source, pathway_id)
-    if dontMerge:
-        ##### pass FBA results to the original model ####
-        groups = rpfba.rpsbml.model.getPlugin('groups')
-        rp_pathway = groups.getGroup(pathway_id)
-        for member in rp_pathway.getListOfMembers():
-            #### reactions
-            reacFBA = rpfba.rpsbml.model.getReaction(member.getIdRef())
-            reacIN = rpsbml.model.getReaction(member.getIdRef())
-            reacIN.setAnnotation(reacFBA.getAnnotation())
-            #### species TODO: only for shadow price
-        #### species #TODO: implement this for shadow prices
-        #### add objectives ####
-        source_fbc = rpfba.rpsbml.model.getPlugin('fbc')
-        target_fbc = rpsbml.model.getPlugin('fbc')
-        target_objID = [i.getId() for i in target_fbc.getListOfObjectives()]
-        for source_obj in source_fbc.getListOfObjectives():
-            if source_obj.getId() in target_objID:
-                target_obj = target_fbc.getObjective(source_obj.getId())
-                target_obj.setAnnotation(source_obj.getAnnotation())
-                for target_fluxObj in target_obj.getListOfFluxObjectives():
-                    for source_fluxObj in source_obj.getListOfFluxObjectives():
-                        if target_fluxObj.getReaction()==source_fluxObj.getReaction():
-                            target_fluxObj.setAnnotation(source_fluxObj.getAnnotation())
-            else:
-                target_fbc.addObjective(source_obj)
-        return libsbml.writeSBMLToString(rpsbml.document).encode('utf-8')
-    else:
-        return libsbml.writeSBMLToString(input_rpsbml.document).encode('utf-8')
-
-
-##
-#
-#
-def runFBA_mem(inputTar, inModel_bytes, outTar, dontMerge, pathway_id='rp_pathway', fill_orphan_species=False, compartment_id='MNXC3'):
-    #open the model as a string
-    inModel_string = inModel_bytes.read().decode('utf-8')
-    #loop through all of them and run FBA on them
-    with tarfile.open(fileobj=outTar, mode='w:xz') as tf:
-        with tarfile.open(fileobj=inputTar, mode='r:xz') as in_tf:
-            for member in in_tf.getmembers():
-                if not member.name=='':
-                    data = singleFBA_mem(member.name, in_tf.extractfile(member).read().decode("utf-8"), inModel_string, dontMerge, pathway_id)
-                    fiOut = io.BytesIO(data)
-                    info = tarfile.TarInfo(member.name)
-                    info.size = len(data)
-                    tf.addfile(tarinfo=info, fileobj=fiOut)
-'''
-"""
 
 ####################### use HDD ############################
 
@@ -306,21 +244,26 @@ def runFBA_hdd(inputTar,
             inModel_string = inModel_bytes.read().decode('utf-8')
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
                 fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
-                singleFBA_hdd(fileName,
-                              sbml_path,
-                              inModel_string,
-                              sim_type,
-                              source_reaction,
-                              target_reaction,
-                              source_coefficient,
-                              target_coefficient,
-                              isMax,
-                              fraction_of,
-                              tmpOutputFolder,
-                              dontMerge,
-                              pathway_id,
-                              compartment_id,
-                              fill_orphan_species)
+                try:
+                    singleFBA_hdd(fileName,
+                                  sbml_path,
+                                  inModel_string,
+                                  sim_type,
+                                  source_reaction,
+                                  target_reaction,
+                                  source_coefficient,
+                                  target_coefficient,
+                                  isMax,
+                                  fraction_of,
+                                  tmpOutputFolder,
+                                  dontMerge,
+                                  pathway_id,
+                                  compartment_id,
+                                  fill_orphan_species)
+                except OSError as e:
+                    logging.warning(e)
+                    logging.warning('Segmentation fault by Cobrapy') 
+                    pass
             with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
                     fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
@@ -342,7 +285,6 @@ def main(input_path,
          dont_merge, 
          pathway_id, 
          compartment_id):
-    logging.error(input_path)
     with open(input_path, 'rb') as input_bytes:
         with open(full_sbml_path, 'rb') as full_sbml_bytes:
             outputTar_obj = io.BytesIO()
