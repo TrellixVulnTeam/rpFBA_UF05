@@ -18,6 +18,8 @@ import rpTool as rpFBA
 
 import rpSBML
 
+""" DEPRECATED
+
 ###################################################################################
 ###################################################################################
 ###################################################################################
@@ -131,6 +133,7 @@ def processify(func):
             return wrap_func(*args, **kwargs)
     return wrapper
 
+"""
 
 ###########################################################
 ################## multiprocesses run #####################
@@ -141,10 +144,11 @@ def processify(func):
 
 ####################### use HDD ############################
 
+
 ##
 #
 #
-@processify
+#@processify
 def singleFBA_hdd(fileName,
                   sbml_path,
                   inModel_string,
@@ -217,7 +221,7 @@ def singleFBA_hdd(fileName,
     else:
         rpfba.rpsbml.writeSBML(tmpOutputFolder)
 
-
+''' DEPRECATED
 ##
 #
 #
@@ -271,7 +275,72 @@ def runFBA_hdd(inputTar,
                     info.size = os.path.getsize(sbml_path)
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
 
+'''
 
+import multiprocessing
+
+
+##
+#
+#
+def runFBA_multi(inputTar,
+                 inModel_bytes,
+                 outputTar,
+                 sim_type,
+                 source_reaction,
+                 target_reaction,
+                 source_coefficient,
+                 target_coefficient,
+                 isMax,
+                 fraction_of,
+                 dontMerge,
+                 pathway_id='rp_pathway',
+                 compartment_id='MNXC3',
+                 fill_orphan_species=False):
+    with tempfile.TemporaryDirectory() as tmpOutputFolder:
+        with tempfile.TemporaryDirectory() as tmpInputFolder:
+            tar = tarfile.open(fileobj=inputTar, mode='r:xz')
+            tar.extractall(path=tmpInputFolder)
+            tar.close()
+            #open the model as a string
+            inModel_string = inModel_bytes.read().decode('utf-8')
+            #HERE SPECIFY THE NUMBER OF CORES
+            pool = multiprocessing.Pool(processes=10)
+            results = []
+            for sbml_path in glob.glob(tmpInputFolder+'/*'):
+                fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
+                results.append(pool.apply_async(singleFBA_hdd, args=(fileName,
+                                                                     sbml_path,
+                                                                     inModel_string,
+                                                                     sim_type,
+                                                                     source_reaction,
+                                                                     target_reaction,
+                                                                     source_coefficient,
+                                                                     target_coefficient,
+                                                                     isMax,
+                                                                     fraction_of,
+                                                                     tmpOutputFolder,
+                                                                     dontMerge,
+                                                                     pathway_id,
+                                                                     compartment_id,
+                                                                     fill_orphan_species,)))
+            output = [p.get() for p in results]
+            logging.info(output)
+            pool.close()
+            pool.join()
+            with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
+                for sbml_path in glob.glob(tmpOutputFolder+'/*'):
+                    fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
+                    info = tarfile.TarInfo(fileName)
+                    info.size = os.path.getsize(sbml_path)
+                    ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
+
+
+
+
+##
+#
+#
 def main(input_path, 
          full_sbml_path, 
          output_path, 
@@ -288,6 +357,20 @@ def main(input_path,
     with open(input_path, 'rb') as input_bytes:
         with open(full_sbml_path, 'rb') as full_sbml_bytes:
             outputTar_obj = io.BytesIO()
+            runFBA_multi(input_bytes,
+                         full_sbml_bytes,
+                         outputTar_obj,
+                         str(sim_type),
+                         str(source_reaction),
+                         str(target_reaction),
+                         float(source_coefficient),
+                         float(target_coefficient),
+                         bool(is_max),
+                         float(fraction_of),
+                         bool(dont_merge),
+                         str(pathway_id),
+                         str(compartment_id))
+            '''DEPRECATED
             runFBA_hdd(input_bytes,
                        full_sbml_bytes,
                        outputTar_obj,
@@ -301,6 +384,7 @@ def main(input_path,
                        bool(dont_merge),
                        str(pathway_id),
                        str(compartment_id))
+            '''
             ########## IMPORTANT #####
             outputTar_obj.seek(0)
             ##########################
