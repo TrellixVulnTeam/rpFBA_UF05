@@ -305,7 +305,7 @@ def runFBA_multi(inputTar,
             #open the model as a string
             inModel_string = inModel_bytes.read().decode('utf-8')
             #HERE SPECIFY THE NUMBER OF CORES
-            pool = multiprocessing.Pool(processes=10)
+            pool = multiprocessing.Pool(processes=5)
             results = []
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
                 fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
