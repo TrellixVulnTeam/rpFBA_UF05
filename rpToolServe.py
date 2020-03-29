@@ -18,11 +18,12 @@ import rpTool as rpFBA
 
 import rpSBML
 
-""" DEPRECATED
 
 ###################################################################################
+################################## processify #####################################
 ###################################################################################
-###################################################################################
+
+#hack to stop the memory leak. Indeed it seems that looping through rpFBA and the rest causes a memory leak... According to: https://github.com/opencobra/cobrapy/issues/568 there is still memory leak issues with cobrapy. looping through hundreds of models and running FBA may be the culprit
 
 import inspect
 import traceback
@@ -133,13 +134,31 @@ def processify(func):
             return wrap_func(*args, **kwargs)
     return wrapper
 
-"""
 
 ###########################################################
 ################## multiprocesses run #####################
 ###########################################################
 
-#hack to stop the memory leak. Indeed it seems that looping through rpFBA and the rest causes a memory leak... According to: https://github.com/opencobra/cobrapy/issues/568 there is still memory leak issues with cobrapy. looping through hundreds of models and running FBA may be the culprit
+#This is a non-deamonic multiprocessing method that can be used in combination with processify
+
+import multiprocessing
+import multiprocessing.pool
+import time
+
+
+class NoDaemonProcess(multiprocessing.Process):
+    # make 'daemon' attribute always return False
+    def _get_daemon(self):
+        return False
+    def _set_daemon(self, value):
+        pass
+    daemon = property(_get_daemon, _set_daemon)
+
+# We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool
+# because the latter is only a wrapper function, not a proper class.
+class nonDeamonicPool(multiprocessing.pool.Pool):
+    Process = NoDaemonProcess
+    
 
 
 ####################### use HDD ############################
@@ -148,7 +167,7 @@ def processify(func):
 ##
 #
 #
-#@processify
+@processify
 def singleFBA_hdd(fileName,
                   sbml_path,
                   inModel_string,
@@ -221,63 +240,6 @@ def singleFBA_hdd(fileName,
     else:
         rpfba.rpsbml.writeSBML(tmpOutputFolder)
 
-''' DEPRECATED
-##
-#
-#
-def runFBA_hdd(inputTar,
-               inModel_bytes,
-               outputTar,
-               sim_type,
-               source_reaction,
-               target_reaction,
-               source_coefficient,
-               target_coefficient,
-               isMax,
-               fraction_of,
-               dontMerge,
-               pathway_id='rp_pathway',
-               compartment_id='MNXC3',
-               fill_orphan_species=False):
-    with tempfile.TemporaryDirectory() as tmpOutputFolder:
-        with tempfile.TemporaryDirectory() as tmpInputFolder:
-            tar = tarfile.open(fileobj=inputTar, mode='r:xz')
-            tar.extractall(path=tmpInputFolder)
-            tar.close()
-            #open the model as a string
-            inModel_string = inModel_bytes.read().decode('utf-8')
-            for sbml_path in glob.glob(tmpInputFolder+'/*'):
-                fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
-                try:
-                    singleFBA_hdd(fileName,
-                                  sbml_path,
-                                  inModel_string,
-                                  sim_type,
-                                  source_reaction,
-                                  target_reaction,
-                                  source_coefficient,
-                                  target_coefficient,
-                                  isMax,
-                                  fraction_of,
-                                  tmpOutputFolder,
-                                  dontMerge,
-                                  pathway_id,
-                                  compartment_id,
-                                  fill_orphan_species)
-                except OSError as e:
-                    logging.warning(e)
-                    logging.warning('Segmentation fault by Cobrapy') 
-                    pass
-            with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
-                for sbml_path in glob.glob(tmpOutputFolder+'/*'):
-                    fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
-                    info = tarfile.TarInfo(fileName)
-                    info.size = os.path.getsize(sbml_path)
-                    ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
-
-'''
-
-import multiprocessing
 
 
 ##
@@ -294,6 +256,7 @@ def runFBA_multi(inputTar,
                  isMax,
                  fraction_of,
                  dontMerge,
+                 num_workers=10,
                  pathway_id='rp_pathway',
                  compartment_id='MNXC3',
                  fill_orphan_species=False):
@@ -305,7 +268,7 @@ def runFBA_multi(inputTar,
             #open the model as a string
             inModel_string = inModel_bytes.read().decode('utf-8')
             #HERE SPECIFY THE NUMBER OF CORES
-            pool = multiprocessing.Pool(processes=5)
+            pool = nonDeamonicPool(processes=num_workers)
             results = []
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
                 fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
@@ -352,6 +315,7 @@ def main(input_path,
          is_max, 
          fraction_of, 
          dont_merge, 
+         num_workers,
          pathway_id, 
          compartment_id):
     with open(input_path, 'rb') as input_bytes:
@@ -368,6 +332,7 @@ def main(input_path,
                          bool(is_max),
                          float(fraction_of),
                          bool(dont_merge),
+                         int(num_workers),
                          str(pathway_id),
                          str(compartment_id))
             '''DEPRECATED

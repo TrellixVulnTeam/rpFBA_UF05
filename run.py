@@ -29,6 +29,7 @@ def main(inputfile,
          source_coefficient=1.0,
          target_coefficient=1.0,
          is_max=True,
+         num_workers=10,
          fraction_of=0.75,
          dont_merge=True):
     docker_client = docker.from_env()
@@ -67,6 +68,8 @@ def main(inputfile,
                    str(fraction_of),
                    '-dont_merge',
                    str(dont_merge),
+                   '-num_workers',
+                   str(num_workers),
                    '-pathway_id',
                    str(pathway_id),
                    '-output',
@@ -104,6 +107,7 @@ if __name__ == "__main__":
     parser.add_argument('-sim_type', type=str, default='fraction')
     parser.add_argument('-source_reaction', type=str, default='biomass')
     parser.add_argument('-target_reaction', type=str, default='RP1_sink')
+    parser.add_argument('-num_workers', type=int, default=10)
     parser.add_argument('-source_coefficient', type=float, default=1.0)
     parser.add_argument('-target_coefficient', type=float, default=1.0)
     parser.add_argument('-is_max', type=str, default='True')
@@ -122,5 +126,6 @@ if __name__ == "__main__":
          params.source_coefficient,
          params.target_coefficient,
          params.is_max,
+         params.num_workers,
          params.fraction_of,
          params.dont_merge)
