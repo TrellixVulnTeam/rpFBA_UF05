@@ -108,12 +108,12 @@ class rpFBA:
     def runMultiObjective(self,
                           reactions,
                           coefficients,
-                          isMax=True,
+                          is_max=True,
                           pathway_id='rp_pathway',
                           objective_id=None):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        objective_id = self.rpsbml.findCreateObjective(reactions, coefficients, isMax)
+        objective_id = self.rpsbml.findCreateObjective(reactions, coefficients, is_max)
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
         self._convertToCobra()
@@ -125,13 +125,13 @@ class rpFBA:
     ##
     #
     #
-    def runFBA(self, reaction_id, isMax=True, pathway_id='rp_pathway', objective_id=None):
+    def runFBA(self, reaction_id, is_max=True, pathway_id='rp_pathway', objective_id=None):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
         if not objective_id:
-            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], isMax)
+            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], is_max)
         else:
-            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], isMax, objective_id)
+            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], is_max, objective_id)
         #run the FBA
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
@@ -144,13 +144,13 @@ class rpFBA:
     ##
     #
     #
-    def runParsimoniousFBA(self, reaction_id, fraction_of_optimum=0.95, isMax=True, pathway_id='rp_pathway', objective_id=None):
+    def runParsimoniousFBA(self, reaction_id, fraction_of_optimum=0.95, is_max=True, pathway_id='rp_pathway', objective_id=None):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
         if not objective_id:
-            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], isMax)
+            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], is_max)
         else:
-            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], isMax, objective_id)
+            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], is_max, objective_id)
         #run the FBA
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
@@ -163,11 +163,11 @@ class rpFBA:
     ## Optimise for a target reaction while fixing a source reaction to the fraction of its optimum
     #
     #
-    def runFractionReaction(self, source_reaction, target_reaction, fraction_of_source=0.75, isMax=True, pathway_id='rp_pathway', objective_id=None):
+    def runFractionReaction(self, source_reaction, target_reaction, fraction_of_source=0.75, is_max=True, pathway_id='rp_pathway', objective_id=None):
         #retreive the biomass objective and flux results and set as maxima
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        source_obj_id = self.rpsbml.findCreateObjective([source_reaction], [1], isMax)
+        source_obj_id = self.rpsbml.findCreateObjective([source_reaction], [1], is_max)
         #TODO: use the rpSBML BRSynth annotation parser
         source_flux = None
         fbc_obj = fbc_plugin.getObjective(source_obj_id)
