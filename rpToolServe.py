@@ -168,24 +168,29 @@ class nonDeamonicPool(multiprocessing.pool.Pool):
 #
 #
 @processify
-def singleFBA_hdd(fileName,
+def singleFBA_hdd(file_name,
                   sbml_path,
-                  inModel_string,
+                  gem_sbml,
                   sim_type,
                   source_reaction,
                   target_reaction,
                   source_coefficient,
                   target_coefficient,
-                  isMax,
+                  is_max,
                   fraction_of,
                   tmpOutputFolder,
                   dontMerge,
                   pathway_id,
                   compartment_id,
                   fill_orphan_species):
-    rpsbml = rpSBML.rpSBML(fileName)
+    logging.warning(sbml_path)
+    logging.warning(file_name)
+    logging.warning('######################')
+    rpsbml = rpSBML.rpSBML(file_name)
     rpsbml.readSBML(sbml_path)
-    input_rpsbml = rpSBML.rpSBML(fileName, libsbml.readSBMLFromString(inModel_string))
+    #input_rpsbml = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
+    input_rpsbml = rpSBML.rpSBML(file_name)
+    input_rpsbml.readSBML(gem_sbml)
     rpsbml.mergeModels(input_rpsbml)
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
@@ -193,16 +198,16 @@ def singleFBA_hdd(fileName,
         rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of, pathway_id)
     ####### FBA ########
     elif sim_type=='fba':
-        rpfba.runFBA(target_reaction, isMax, pathway_id)
+        rpfba.runFBA(target_reaction, is_max, pathway_id)
     ####### pFBA #######
     elif sim_type=='pfba':
-        rpfba.runParsimoniousFBA(target_reaction, fraction_of, isMax, pathway_id)
+        rpfba.runParsimoniousFBA(target_reaction, fraction_of, is_max, pathway_id)
     else:
         logging.error('Cannot recognise sim_type: '+str(sim_type))    
     '''
     ###### multi objective #####
     elif sim_type=='multi_fba':
-        rpfba.runMultiObjective(reactions, coefficients, isMax, pathway_id)
+        rpfba.runMultiObjective(reactions, coefficients, is_max, pathway_id)
     '''
     if dontMerge:
         groups = rpfba.rpsbml.model.getPlugin('groups')
@@ -253,7 +258,7 @@ def runFBA_multi(inputTar,
                  target_reaction,
                  source_coefficient,
                  target_coefficient,
-                 isMax,
+                 is_max,
                  fraction_of,
                  dontMerge,
                  num_workers=10,
@@ -266,21 +271,21 @@ def runFBA_multi(inputTar,
             tar.extractall(path=tmpInputFolder)
             tar.close()
             #open the model as a string
-            inModel_string = inModel_bytes.read().decode('utf-8')
+            gem_sbml = inModel_bytes.read().decode('utf-8')
             #HERE SPECIFY THE NUMBER OF CORES
             pool = nonDeamonicPool(processes=num_workers)
             results = []
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
-                fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
-                results.append(pool.apply_async(singleFBA_hdd, args=(fileName,
+                file_name = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
+                results.append(pool.apply_async(singleFBA_hdd, args=(file_name,
                                                                      sbml_path,
-                                                                     inModel_string,
+                                                                     gem_sbml,
                                                                      sim_type,
                                                                      source_reaction,
                                                                      target_reaction,
                                                                      source_coefficient,
                                                                      target_coefficient,
-                                                                     isMax,
+                                                                     is_max,
                                                                      fraction_of,
                                                                      tmpOutputFolder,
                                                                      dontMerge,
@@ -293,8 +298,8 @@ def runFBA_multi(inputTar,
             pool.join()
             with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
-                    fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
-                    info = tarfile.TarInfo(fileName)
+                    file_name = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
+                    info = tarfile.TarInfo(file_name)
                     info.size = os.path.getsize(sbml_path)
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
 

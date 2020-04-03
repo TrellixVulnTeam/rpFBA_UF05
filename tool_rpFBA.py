@@ -23,7 +23,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser('Python wrapper to calculate FBA to generate rpFBA collection')
     parser.add_argument('-input', type=str)
     parser.add_argument('-input_format', type=str, default='tar')
-    parser.add_argument('-full_sbml', type=str)
+    parser.add_argument('-gem_sbml', type=str)
     parser.add_argument('-output', type=str)
     parser.add_argument('-pathway_id', type=str, default='rp_pathway')
     parser.add_argument('-compartment_id', type=str, default='MNXC3')
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         exit(1)
     if params.input_format=='tar': 
         rpToolServe.main(params.input,
-                         params.full_sbml,
+                         params.gem_sbml,
                          params.output,
                          params.sim_type,
                          params.source_reaction,
@@ -79,7 +79,7 @@ if __name__ == "__main__":
                 info.size = os.path.getsize(params.input)
                 tf.addfile(tarinfo=info, fileobj=open(params.input, 'rb'))
             rpToolServe.main(input_tar,
-                             params.full_sbml,
+                             params.gem_sbml,
                              output_tar,
                              params.sim_type,
                              params.source_reaction,

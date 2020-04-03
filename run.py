@@ -19,7 +19,7 @@ import docker
 #
 def main(inputfile,
          input_format,
-         full_sbml,
+         gem_sbml,
          output,
          pathway_id='rp_pathway',
          compartment_id='MNXC3',
@@ -46,12 +46,12 @@ def main(inputfile,
             exit(1)
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         shutil.copy(inputfile, tmpOutputFolder+'/input.dat')
-        shutil.copy(full_sbml, tmpOutputFolder+'/input_sbml.dat')
+        shutil.copy(gem_sbml, tmpOutputFolder+'/gem_sbml.dat')
         command = ['/home/tool_rpFBA.py',
                    '-input',
                    '/home/tmp_output/input.dat',
-                   '-full_sbml',
-                   '/home/tmp_output/input_sbml.dat',
+                   '-gem_sbml',
+                   '/home/tmp_output/gem_sbml.dat',
                    '-sim_type',
                    str(sim_type),
                    '-source_reaction',
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser('Python wrapper to calculate FBA to generate rpFBA collection')
     parser.add_argument('-input', type=str)
     parser.add_argument('-input_format', type=str, default='tar')
-    parser.add_argument('-full_sbml', type=str)
+    parser.add_argument('-gem_sbml', type=str)
     parser.add_argument('-output', type=str)
     parser.add_argument('-pathway_id', type=str, default='rp_pathway')
     parser.add_argument('-compartment_id', type=str, default='MNXC3')
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     params = parser.parse_args()
     main(params.input,
          params.input_format,
-         params.full_sbml,
+         params.gem_sbml,
          params.output,
          params.pathway_id,
          params.compartment_id,
