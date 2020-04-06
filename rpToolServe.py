@@ -167,7 +167,7 @@ class nonDeamonicPool(multiprocessing.pool.Pool):
 ##
 #
 #
-@processify
+#@processify
 def singleFBA_hdd(file_name,
                   sbml_path,
                   gem_sbml,
@@ -250,7 +250,7 @@ def singleFBA_hdd(file_name,
 #
 #
 def runFBA_hdd(inputTar,
-               inModel_bytes,
+               gem_sbml,
                outputTar,
                sim_type,
                source_reaction,
@@ -263,19 +263,20 @@ def runFBA_hdd(inputTar,
                pathway_id='rp_pathway',
                compartment_id='MNXC3',
                fill_orphan_species=False):
+    print('################### runFBA_hdd ####################')
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
             tar = tarfile.open(fileobj=inputTar, mode='r:xz')
             tar.extractall(path=tmpInputFolder)
             tar.close()
             #open the model as a string
-            inModel_string = inModel_bytes.read().decode('utf-8')
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
+                print(sbml_path)
                 fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
                 try:
                     singleFBA_hdd(fileName,
                                   sbml_path,
-                                  inModel_string,
+                                  gem_sbml,
                                   sim_type,
                                   source_reaction,
                                   target_reaction,
@@ -306,7 +307,7 @@ def runFBA_hdd(inputTar,
 #
 #
 def runFBA_multi(inputTar,
-                 inModel_bytes,
+                 gem_sbml,
                  outputTar,
                  sim_type,
                  source_reaction,
@@ -325,8 +326,6 @@ def runFBA_multi(inputTar,
             tar = tarfile.open(fileobj=inputTar, mode='r:xz')
             tar.extractall(path=tmpInputFolder)
             tar.close()
-            #open the model as a string
-            gem_sbml = inModel_bytes.read().decode('utf-8')
             #HERE SPECIFY THE NUMBER OF CORES
             pool = nonDeamonicPool(processes=num_workers)
             results = []
@@ -365,7 +364,7 @@ def runFBA_multi(inputTar,
 #
 #
 def main(input_path, 
-         full_sbml_path, 
+         gem_sbml, 
          output_path, 
          sim_type, 
          source_reaction, 
@@ -379,11 +378,10 @@ def main(input_path,
          pathway_id, 
          compartment_id):
     with open(input_path, 'rb') as input_bytes:
-        with open(full_sbml_path, 'rb') as full_sbml_bytes:
+        with open(gem_sbml, 'rb') as full_sbml_bytes:
             outputTar_obj = io.BytesIO()
-            '''
             runFBA_multi(input_bytes,
-                         full_sbml_bytes,
+                         gem_sbml,
                          outputTar_obj,
                          str(sim_type),
                          str(source_reaction),
@@ -396,11 +394,9 @@ def main(input_path,
                          int(num_workers),
                          str(pathway_id),
                          str(compartment_id))
-            '''
             '''DEPRECATED
-            '''
             runFBA_hdd(input_bytes,
-                       full_sbml_bytes,
+                       gem_sbml,
                        outputTar_obj,
                        str(sim_type),
                        str(source_reaction),
@@ -412,7 +408,6 @@ def main(input_path,
                        bool(dont_merge),
                        str(pathway_id),
                        str(compartment_id))
-            '''
             '''
             ########## IMPORTANT #####
             outputTar_obj.seek(0)
