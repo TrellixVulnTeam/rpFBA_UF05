@@ -267,27 +267,26 @@ def runFBA_hdd(inputTar,
             #open the model as a string
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
                 fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
-                print('########### '+str(fileName)+' ##########')
-                #try:
-                singleFBA_hdd(fileName,
-                              sbml_path,
-                              gem_sbml,
-                              sim_type,
-                              source_reaction,
-                              target_reaction,
-                              source_coefficient,
-                              target_coefficient,
-                              isMax,
-                              fraction_of,
-                              tmpOutputFolder,
-                              dontMerge,
-                              pathway_id,
-                              compartment_id,
-                              fill_orphan_species)
-                #except OSError as e:
-                #    logging.warning(e)
-                #    logging.warning('Segmentation fault by Cobrapy')
-                #    pass
+                try:
+                    singleFBA_hdd(fileName,
+                                  sbml_path,
+                                  gem_sbml,
+                                  sim_type,
+                                  source_reaction,
+                                  target_reaction,
+                                  source_coefficient,
+                                  target_coefficient,
+                                  isMax,
+                                  fraction_of,
+                                  tmpOutputFolder,
+                                  dontMerge,
+                                  pathway_id,
+                                  compartment_id,
+                                  fill_orphan_species)
+                except OSError as e:
+                    logging.warning(e)
+                    logging.warning('Segmentation fault by Cobrapy')
+                    pass
             with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
                     fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
@@ -375,7 +374,6 @@ def main(input_path,
     with open(input_path, 'rb') as input_bytes:
         with open(gem_sbml, 'rb') as full_sbml_bytes:
             outputTar_obj = io.BytesIO()
-            '''
             runFBA_multi(input_bytes,
                          gem_sbml,
                          outputTar_obj,
@@ -390,9 +388,7 @@ def main(input_path,
                          int(num_workers),
                          str(pathway_id),
                          str(compartment_id))
-            '''
             '''DEPRECATED
-            '''
             runFBA_hdd(input_bytes,
                        gem_sbml,
                        outputTar_obj,
@@ -406,7 +402,6 @@ def main(input_path,
                        bool(dont_merge),
                        str(pathway_id),
                        str(compartment_id))
-            '''
             '''
             ########## IMPORTANT #####
             outputTar_obj.seek(0)
