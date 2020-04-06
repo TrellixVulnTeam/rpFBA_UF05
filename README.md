@@ -42,7 +42,7 @@ docker build -t brsynth/rpfba-standalone:dev -f Dockerfile .
 To test the model extract the test.tar and run the following command:
 
 ```
-python run.py -input test/test_rpCofactors.tar -input_format tar -full_sbml test/e_coli_model.sbml -output test/test_rpFBA.tar
+python run.py -input test/test_rpCofactors.tar -input_format tar -gem_sbml test/e_coli_model.sbml -output test/test_rpFBA.tar
 ```
 
 ## Contributing

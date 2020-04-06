@@ -158,7 +158,6 @@ class NoDaemonProcess(multiprocessing.Process):
 # because the latter is only a wrapper function, not a proper class.
 class nonDeamonicPool(multiprocessing.pool.Pool):
     Process = NoDaemonProcess
-    
 
 
 ####################### use HDD ############################
@@ -167,7 +166,7 @@ class nonDeamonicPool(multiprocessing.pool.Pool):
 ##
 #
 #
-#@processify
+@processify
 def singleFBA_hdd(file_name,
                   sbml_path,
                   gem_sbml,
@@ -203,7 +202,7 @@ def singleFBA_hdd(file_name,
     elif sim_type=='pfba':
         rpfba.runParsimoniousFBA(target_reaction, fraction_of, is_max, pathway_id)
     else:
-        logging.error('Cannot recognise sim_type: '+str(sim_type))    
+        logging.error('Cannot recognise sim_type: '+str(sim_type))
     '''
     ###### multi objective #####
     elif sim_type=='multi_fba':
@@ -291,7 +290,7 @@ def runFBA_hdd(inputTar,
                                   fill_orphan_species)
                 except OSError as e:
                     logging.warning(e)
-                    logging.warning('Segmentation fault by Cobrapy') 
+                    logging.warning('Segmentation fault by Cobrapy')
                     pass
             with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
@@ -363,19 +362,19 @@ def runFBA_multi(inputTar,
 ##
 #
 #
-def main(input_path, 
-         gem_sbml, 
-         output_path, 
-         sim_type, 
-         source_reaction, 
-         target_reaction, 
-         source_coefficient, 
-         target_coefficient, 
-         is_max, 
-         fraction_of, 
-         dont_merge, 
+def main(input_path,
+         gem_sbml,
+         output_path,
+         sim_type,
+         source_reaction,
+         target_reaction,
+         source_coefficient,
+         target_coefficient,
+         is_max,
+         fraction_of,
+         dont_merge,
          num_workers,
-         pathway_id, 
+         pathway_id,
          compartment_id):
     with open(input_path, 'rb') as input_bytes:
         with open(gem_sbml, 'rb') as full_sbml_bytes:
