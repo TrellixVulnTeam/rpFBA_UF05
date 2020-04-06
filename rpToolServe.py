@@ -247,6 +247,9 @@ def singleFBA_hdd(file_name,
 
 
 
+
+
+
 ##
 #
 #
@@ -326,6 +329,7 @@ def main(input_path,
     with open(input_path, 'rb') as input_bytes:
         with open(full_sbml_path, 'rb') as full_sbml_bytes:
             outputTar_obj = io.BytesIO()
+            '''
             runFBA_multi(input_bytes,
                          full_sbml_bytes,
                          outputTar_obj,
@@ -340,7 +344,9 @@ def main(input_path,
                          int(num_workers),
                          str(pathway_id),
                          str(compartment_id))
+            '''
             '''DEPRECATED
+            '''
             runFBA_hdd(input_bytes,
                        full_sbml_bytes,
                        outputTar_obj,
@@ -354,6 +360,7 @@ def main(input_path,
                        bool(dont_merge),
                        str(pathway_id),
                        str(compartment_id))
+            '''
             '''
             ########## IMPORTANT #####
             outputTar_obj.seek(0)
