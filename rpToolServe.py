@@ -246,6 +246,58 @@ def singleFBA_hdd(file_name,
         rpfba.rpsbml.writeSBML(tmpOutputFolder)
 
 
+##
+#
+#
+def runFBA_hdd(inputTar,
+               inModel_bytes,
+               outputTar,
+               sim_type,
+               source_reaction,
+               target_reaction,
+               source_coefficient,
+               target_coefficient,
+               isMax,
+               fraction_of,
+               dontMerge,
+               pathway_id='rp_pathway',
+               compartment_id='MNXC3',
+               fill_orphan_species=False):
+    with tempfile.TemporaryDirectory() as tmpOutputFolder:
+        with tempfile.TemporaryDirectory() as tmpInputFolder:
+            tar = tarfile.open(fileobj=inputTar, mode='r:xz')
+            tar.extractall(path=tmpInputFolder)
+            tar.close()
+            #open the model as a string
+            inModel_string = inModel_bytes.read().decode('utf-8')
+            for sbml_path in glob.glob(tmpInputFolder+'/*'):
+                fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
+                try:
+                    singleFBA_hdd(fileName,
+                                  sbml_path,
+                                  inModel_string,
+                                  sim_type,
+                                  source_reaction,
+                                  target_reaction,
+                                  source_coefficient,
+                                  target_coefficient,
+                                  isMax,
+                                  fraction_of,
+                                  tmpOutputFolder,
+                                  dontMerge,
+                                  pathway_id,
+                                  compartment_id,
+                                  fill_orphan_species)
+                except OSError as e:
+                    logging.warning(e)
+                    logging.warning('Segmentation fault by Cobrapy') 
+                    pass
+            with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
+                for sbml_path in glob.glob(tmpOutputFolder+'/*'):
+                    fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
+                    info = tarfile.TarInfo(fileName)
+                    info.size = os.path.getsize(sbml_path)
+                    ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
 
 
 
