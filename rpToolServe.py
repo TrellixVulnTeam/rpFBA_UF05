@@ -371,6 +371,7 @@ def main(input_path,
          num_workers,
          pathway_id,
          compartment_id):
+    outputTar_obj = io.BytesIO()
     runFBA_multi(input_path,
                  gem_sbml,
                  outputTar_obj,
