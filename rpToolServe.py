@@ -261,7 +261,7 @@ def runFBA_hdd(inputTar,
                fill_orphan_species=False):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
-            tar = tarfile.open(fileobj=inputTar, mode='r:xz')
+            tar = tarfile.open(inputTar, mode='r:xz')
             tar.extractall(path=tmpInputFolder)
             tar.close()
             #open the model as a string
@@ -317,7 +317,7 @@ def runFBA_multi(inputTar,
                  fill_orphan_species=False):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
-            tar = tarfile.open(fileobj=inputTar, mode='r:xz')
+            tar = tarfile.open(inputTar, mode='r:xz')
             tar.extractall(path=tmpInputFolder)
             tar.close()
             #HERE SPECIFY THE NUMBER OF CORES
@@ -371,41 +371,38 @@ def main(input_path,
          num_workers,
          pathway_id,
          compartment_id):
-    with open(input_path, 'rb') as input_bytes:
-        with open(gem_sbml, 'rb') as full_sbml_bytes:
-            outputTar_obj = io.BytesIO()
-            runFBA_multi(input_bytes,
-                         gem_sbml,
-                         outputTar_obj,
-                         str(sim_type),
-                         str(source_reaction),
-                         str(target_reaction),
-                         float(source_coefficient),
-                         float(target_coefficient),
-                         bool(is_max),
-                         float(fraction_of),
-                         bool(dont_merge),
-                         int(num_workers),
-                         str(pathway_id),
-                         str(compartment_id))
-            '''DEPRECATED
-            runFBA_hdd(input_bytes,
-                       gem_sbml,
-                       outputTar_obj,
-                       str(sim_type),
-                       str(source_reaction),
-                       str(target_reaction),
-                       float(source_coefficient),
-                       float(target_coefficient),
-                       bool(is_max),
-                       float(fraction_of),
-                       bool(dont_merge),
-                       str(pathway_id),
-                       str(compartment_id))
-            '''
-            ########## IMPORTANT #####
-            outputTar_obj.seek(0)
-            ##########################
-            with open(output_path, 'wb') as f:
-                shutil.copyfileobj(outputTar_obj, f, length=131072)
+    runFBA_multi(input_path,
+                 gem_sbml,
+                 outputTar_obj,
+                 str(sim_type),
+                 str(source_reaction),
+                 str(target_reaction),
+                 float(source_coefficient),
+                 float(target_coefficient),
+                 bool(is_max),
+                 float(fraction_of),
+                 bool(dont_merge),
+                 int(num_workers),
+                 str(pathway_id),
+                 str(compartment_id))
+    '''DEPRECATED
+    runFBA_hdd(input_bytes,
+               gem_sbml,
+               outputTar_obj,
+               str(sim_type),
+               str(source_reaction),
+               str(target_reaction),
+               float(source_coefficient),
+               float(target_coefficient),
+               bool(is_max),
+               float(fraction_of),
+               bool(dont_merge),
+               str(pathway_id),
+               str(compartment_id))
+    '''
+    ########## IMPORTANT #####
+    outputTar_obj.seek(0)
+    ##########################
+    with open(output_path, 'wb') as f:
+        shutil.copyfileobj(outputTar_obj, f, length=131072)
 
