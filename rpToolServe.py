@@ -372,6 +372,8 @@ def main(input_path,
          pathway_id,
          compartment_id):
     outputTar_obj = io.BytesIO()
+    #Not sure why on the VM an OSError is thrown
+    '''
     runFBA_multi(input_path,
                  gem_sbml,
                  outputTar_obj,
@@ -386,7 +388,7 @@ def main(input_path,
                  int(num_workers),
                  str(pathway_id),
                  str(compartment_id))
-    '''DEPRECATED
+    '''
     runFBA_hdd(input_bytes,
                gem_sbml,
                outputTar_obj,
@@ -400,7 +402,6 @@ def main(input_path,
                bool(dont_merge),
                str(pathway_id),
                str(compartment_id))
-    '''
     ########## IMPORTANT #####
     outputTar_obj.seek(0)
     ##########################
