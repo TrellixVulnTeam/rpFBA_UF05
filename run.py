@@ -19,7 +19,7 @@ import docker
 #
 def main(inputfile,
          input_format,
-         full_sbml,
+         gem_sbml,
          output,
          pathway_id='rp_pathway',
          compartment_id='MNXC3',
@@ -29,6 +29,7 @@ def main(inputfile,
          source_coefficient=1.0,
          target_coefficient=1.0,
          is_max=True,
+         num_workers=10,
          fraction_of=0.75,
          dont_merge=True):
     docker_client = docker.from_env()
@@ -45,12 +46,12 @@ def main(inputfile,
             exit(1)
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         shutil.copy(inputfile, tmpOutputFolder+'/input.dat')
-        shutil.copy(full_sbml, tmpOutputFolder+'/input_sbml.dat')
+        shutil.copy(gem_sbml, tmpOutputFolder+'/gem_sbml.dat')
         command = ['/home/tool_rpFBA.py',
                    '-input',
                    '/home/tmp_output/input.dat',
-                   '-full_sbml',
-                   '/home/tmp_output/input_sbml.dat',
+                   '-gem_sbml',
+                   '/home/tmp_output/gem_sbml.dat',
                    '-sim_type',
                    str(sim_type),
                    '-source_reaction',
@@ -67,6 +68,8 @@ def main(inputfile,
                    str(fraction_of),
                    '-dont_merge',
                    str(dont_merge),
+                   '-num_workers',
+                   str(num_workers),
                    '-pathway_id',
                    str(pathway_id),
                    '-output',
@@ -97,13 +100,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser('Python wrapper to calculate FBA to generate rpFBA collection')
     parser.add_argument('-input', type=str)
     parser.add_argument('-input_format', type=str, default='tar')
-    parser.add_argument('-full_sbml', type=str)
+    parser.add_argument('-gem_sbml', type=str)
     parser.add_argument('-output', type=str)
     parser.add_argument('-pathway_id', type=str, default='rp_pathway')
     parser.add_argument('-compartment_id', type=str, default='MNXC3')
     parser.add_argument('-sim_type', type=str, default='fraction')
     parser.add_argument('-source_reaction', type=str, default='biomass')
     parser.add_argument('-target_reaction', type=str, default='RP1_sink')
+    parser.add_argument('-num_workers', type=int, default=10)
     parser.add_argument('-source_coefficient', type=float, default=1.0)
     parser.add_argument('-target_coefficient', type=float, default=1.0)
     parser.add_argument('-is_max', type=str, default='True')
@@ -112,7 +116,7 @@ if __name__ == "__main__":
     params = parser.parse_args()
     main(params.input,
          params.input_format,
-         params.full_sbml,
+         params.gem_sbml,
          params.output,
          params.pathway_id,
          params.compartment_id,
@@ -122,5 +126,6 @@ if __name__ == "__main__":
          params.source_coefficient,
          params.target_coefficient,
          params.is_max,
+         params.num_workers,
          params.fraction_of,
          params.dont_merge)
