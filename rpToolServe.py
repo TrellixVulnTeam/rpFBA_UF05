@@ -261,7 +261,7 @@ def runFBA_hdd(inputTar,
                fill_orphan_species=False):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
-            tar = tarfile.open(inputTar, mode='r:xz')
+            tar = tarfile.open(inputTar, mode='r:gz')
             tar.extractall(path=tmpInputFolder)
             tar.close()
             if len(glob.glob(tmpInputFolder+'/*'))==0:
@@ -293,9 +293,9 @@ def runFBA_hdd(inputTar,
             if len(glob.glob(tmpOutputFolder+'/*'))==0:
                 logging.error('rpFBA has not produced any results')
                 return False
-            with tarfile.open(outputTar, mode='w:xz') as ot:
+            with tarfile.open(outputTar, mode='w:gz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
-                    fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
+                    fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.sbml.xml'
                     info = tarfile.TarInfo(fileName)
                     info.size = os.path.getsize(sbml_path)
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
@@ -324,7 +324,7 @@ def runFBA_multi(inputTar,
                  fill_orphan_species=False):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
-            tar = tarfile.open(inputTar, mode='r:xz')
+            tar = tarfile.open(inputTar, mode='r:gz')
             tar.extractall(path=tmpInputFolder)
             tar.close()
             if len(glob.glob(tmpInputFolder+'/*'))==0:
@@ -357,9 +357,9 @@ def runFBA_multi(inputTar,
             if len(glob.glob(tmpOutputFolder+'/*'))==0:
                 logging.error('rpFBA has not produced any results')
                 return False
-            with tarfile.open(outputTar, mode='w:xz') as ot:
+            with tarfile.open(outputTar, mode='w:gz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
-                    file_name = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
+                    file_name = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.sbml.xml'
                     info = tarfile.TarInfo(file_name)
                     info.size = os.path.getsize(sbml_path)
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
@@ -403,7 +403,7 @@ def main(input_path,
     '''DEPRECATED
     runFBA_hdd(input_bytes,
                gem_sbml,
-               outputTar_obj,
+               output_path,
                str(sim_type),
                str(source_reaction),
                str(target_reaction),
