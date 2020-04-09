@@ -264,6 +264,9 @@ def runFBA_hdd(inputTar,
             tar = tarfile.open(inputTar, mode='r:xz')
             tar.extractall(path=tmpInputFolder)
             tar.close()
+            if len(glob.glob(tmpInputFolder+'/*'))==0:
+                logging.error('Input file is empty')
+                return False
             #open the model as a string
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
                 fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
@@ -287,12 +290,16 @@ def runFBA_hdd(inputTar,
                     logging.warning(e)
                     logging.warning('Segmentation fault by Cobrapy')
                     pass
-            with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
+            if len(glob.glob(tmpOutputFolder+'/*'))==0:
+                logging.error('rpFBA has not produced any results')
+                return False
+            with tarfile.open(outputTar, mode='w:xz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
                     fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
                     info = tarfile.TarInfo(fileName)
                     info.size = os.path.getsize(sbml_path)
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
+    return True
 
 
 
@@ -320,6 +327,9 @@ def runFBA_multi(inputTar,
             tar = tarfile.open(inputTar, mode='r:xz')
             tar.extractall(path=tmpInputFolder)
             tar.close()
+            if len(glob.glob(tmpInputFolder+'/*'))==0:
+                logging.error('Input file is empty')
+                return False
             #HERE SPECIFY THE NUMBER OF CORES
             pool = nonDeamonicPool(processes=num_workers)
             results = []
@@ -344,12 +354,16 @@ def runFBA_multi(inputTar,
             logging.info(output)
             pool.close()
             pool.join()
-            with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
+            if len(glob.glob(tmpOutputFolder+'/*'))==0:
+                logging.error('rpFBA has not produced any results')
+                return False
+            with tarfile.open(outputTar, mode='w:xz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
                     file_name = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
                     info = tarfile.TarInfo(file_name)
                     info.size = os.path.getsize(sbml_path)
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
+    return True
 
 
 
@@ -371,10 +385,10 @@ def main(input_path,
          num_workers,
          pathway_id,
          compartment_id):
-    outputTar_obj = io.BytesIO()
+    #outputTar_obj = io.BytesIO()
     runFBA_multi(input_path,
                  gem_sbml,
-                 outputTar_obj,
+                 output_path,
                  str(sim_type),
                  str(source_reaction),
                  str(target_reaction),
@@ -401,9 +415,11 @@ def main(input_path,
                str(pathway_id),
                str(compartment_id))
     '''
+    '''
     ########## IMPORTANT #####
     outputTar_obj.seek(0)
     ##########################
     with open(output_path, 'wb') as f:
         shutil.copyfileobj(outputTar_obj, f, length=131072)
+    '''
 
