@@ -1,6 +1,8 @@
 import cobra
 from cobra.flux_analysis import pfba
 import libsbml
+import tempfile
+import glob
 
 import logging
 
@@ -58,13 +60,16 @@ class rpFBA:
     #
     def _convertToCobra(self):
         try:
-            self.cobraModel = cobra.io.read_sbml_model(self.rpsbml.document.toXMLNode().toXMLString(),
-                    use_fbc_package=True)
+            with tempfile.TemporaryDirectory() as tmpOutputFolder:
+                self.rpsbml.writeSBML(tmpOutputFolder)
+                self.cobraModel = cobra.io.read_sbml_model(glob.glob(tmpOutputFolder+'/*')[0], use_fbc_package=True)
+            #self.cobraModel = cobra.io.read_sbml_model(self.rpsbml.document.toXMLNode().toXMLString(), use_fbc_package=True)
             #use CPLEX
             # self.cobraModel.solver = 'cplex'
         except cobra.io.sbml.CobraSBMLError as e:
             self.logger.error(e)
             self.logger.error('Cannot convert the libSBML model to Cobra')
+            return False
 
 
     ##########################################################
@@ -123,9 +128,11 @@ class rpFBA:
         objective_id = self.rpsbml.findCreateObjective(reactions, coefficients, is_max)
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
-        self._convertToCobra()
+        if not self._convertToCobra():
+            return False
         cobra_results = self.cobraModel.optimize()
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
+        return True
 
 
 
@@ -139,7 +146,8 @@ class rpFBA:
         #run the FBA
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
-        self._convertToCobra()
+        if not self._convertToCobra():
+            return False
         cobra_results = self.cobraModel.optimize()
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
         return cobra_results.objective_value
@@ -155,7 +163,8 @@ class rpFBA:
         #run the FBA
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
-        self._convertToCobra()
+        if not self._convertToCobra():
+            return False
         cobra_results = pfba(self.cobraModel, fraction_of_optimum)
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
         return cobra_results.objective_value
@@ -168,7 +177,9 @@ class rpFBA:
         #retreive the biomass objective and flux results and set as maxima
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
+        self.logger.info('findCreateObjective() for '+str(source_reaction))
         source_obj_id = self.rpsbml.findCreateObjective([source_reaction], [1], is_max)
+        self.logger.info('#### '+source_obj_id+' ####')
         #TODO: use the rpSBML BRSynth annotation parser
         source_flux = None
         fbc_obj = fbc_plugin.getObjective(source_obj_id)
@@ -177,7 +188,9 @@ class rpFBA:
             try:
                 source_flux = float(fbc_obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
             except (AttributeError, ValueError) as e:
-                self.runFBA(source_reaction, pathway_id)
+                #self.runFBA(source_reaction, pathway_id)
+                self.runFBA(source_obj_id, pathway_id)
+                self.logger.info(fbc_plugin.getListOfObjectives())
                 fbc_obj = fbc_plugin.getObjective(source_obj_id)
                 fbc_obj_annot = fbc_obj.getAnnotation()
                 if fbc_obj_annot==None:
@@ -195,13 +208,15 @@ class rpFBA:
         #TODO: add another to check if the objective id exists
         if not objective_id:
             objective_id = 'obj_'+str(target_reaction)+'__restricted_'+str(source_reaction)
+        self.logger.info('findCreateObjective() for '+str(objective_id))
         objective_id = self.rpsbml.findCreateObjective([target_reaction], [1], is_max, objective_id)
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               source_flux*fraction_of_source,
                                                                               source_flux*fraction_of_source)
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
-        self._convertToCobra()
+        if not self._convertToCobra():
+            return False
         cobra_results = self.cobraModel.optimize()
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
         #reset the bounds to the original values for the target

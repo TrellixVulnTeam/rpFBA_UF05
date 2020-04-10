@@ -192,13 +192,19 @@ def singleFBA_hdd(file_name,
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
-        rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of, is_max, pathway_id, objective_id)
+        if not rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of, is_max, pathway_id, objective_id):
+            logging.error('Problem with runFractionReaction')
+            return False
     ####### FBA ########
     elif sim_type=='fba':
-        rpfba.runFBA(target_reaction, is_max, pathway_id, objective_id)
+        if not rpfba.runFBA(target_reaction, is_max, pathway_id, objective_id):
+            logging.error('Problem with runFBA')
+            return False
     ####### pFBA #######
     elif sim_type=='pfba':
-        rpfba.runParsimoniousFBA(target_reaction, fraction_of, is_max, pathway_id, objective_id)
+        if not rpfba.runParsimoniousFBA(target_reaction, fraction_of, is_max, pathway_id, objective_id):
+            logging.error('Problem with runParsimoniousFBA')
+            return False
     else:
         logging.error('Cannot recognise sim_type: '+str(sim_type))
     '''
@@ -273,22 +279,24 @@ def runFBA_hdd(inputTar,
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
                 fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
                 try:
-                    singleFBA_hdd(fileName,
-                                  sbml_path,
-                                  gem_sbml,
-                                  sim_type,
-                                  source_reaction,
-                                  target_reaction,
-                                  source_coefficient,
-                                  target_coefficient,
-                                  isMax,
-                                  fraction_of,
-                                  tmpOutputFolder,
-                                  dont_merge,
-                                  pathway_id,
-                                  objective_id,
-                                  compartment_id,
-                                  fill_orphan_species)
+                    statusFBA = singleFBA_hdd(fileName,
+                                              sbml_path,
+                                              gem_sbml,
+                                              sim_type,
+                                              source_reaction,
+                                              target_reaction,
+                                              source_coefficient,
+                                              target_coefficient,
+                                              isMax,
+                                              fraction_of,
+                                              tmpOutputFolder,
+                                              dont_merge,
+                                              pathway_id,
+                                              objective_id,
+                                              compartment_id,
+                                              fill_orphan_species)
+                    if not statusFBA:
+                        logging.error('Error detected for '+str(fileName))
                 except OSError as e:
                     logging.warning(e)
                     logging.warning('Segmentation fault by Cobrapy')
