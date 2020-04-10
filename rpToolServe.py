@@ -192,7 +192,7 @@ def singleFBA_hdd(file_name,
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
-        rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of, pathway_id, objective_id)
+        rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of, is_max, pathway_id, objective_id)
     ####### FBA ########
     elif sim_type=='fba':
         rpfba.runFBA(target_reaction, is_max, pathway_id, objective_id)
@@ -237,7 +237,7 @@ def singleFBA_hdd(file_name,
                             target_fluxObj.setAnnotation(source_fluxObj.getAnnotation())
             else:
                 target_fbc.addObjective(source_obj)
-        rpsbml.createMultiFluxObj('obj_RP1_sink', ['RP1_sink'], [1])
+        #rpsbml.createMultiFluxObj('obj_RP1_sink', ['RP1_sink'], [1])
         rpsbml.writeSBML(tmpOutputFolder)
     else:
         rpfba.rpsbml.writeSBML(tmpOutputFolder)
@@ -263,7 +263,7 @@ def runFBA_hdd(inputTar,
                fill_orphan_species=False):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
-            tar = tarfile.open(inputTar, mode='r:gz')
+            tar = tarfile.open(inputTar, mode='r')
             tar.extractall(path=tmpInputFolder)
             tar.close()
             if len(glob.glob(tmpInputFolder+'/*'))==0:
@@ -328,7 +328,7 @@ def runFBA_multi(inputTar,
                  fill_orphan_species=False):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
-            tar = tarfile.open(inputTar, mode='r:gz')
+            tar = tarfile.open(inputTar, mode='r')
             tar.extractall(path=tmpInputFolder)
             tar.close()
             if len(glob.glob(tmpInputFolder+'/*'))==0:
@@ -352,7 +352,7 @@ def runFBA_multi(inputTar,
                                                                      tmpOutputFolder,
                                                                      dont_merge,
                                                                      pathway_id,
-                                                                     objective_id=None,
+                                                                     objective_id,
                                                                      compartment_id,
                                                                      fill_orphan_species,)))
             output = [p.get() for p in results]
@@ -392,6 +392,7 @@ def main(input_path,
          objective_id=None,
          compartment_id='MNXC3'):
     #outputTar_obj = io.BytesIO()
+    '''
     runFBA_multi(input_path,
                  gem_sbml,
                  output_path,
@@ -407,8 +408,8 @@ def main(input_path,
                  str(pathway_id),
                  objective_id,
                  str(compartment_id))
-    '''DEPRECATED
-    runFBA_hdd(input_bytes,
+    '''
+    runFBA_hdd(input_path,
                gem_sbml,
                output_path,
                str(sim_type),
@@ -422,7 +423,6 @@ def main(input_path,
                str(pathway_id),
                objective_id,
                str(compartment_id))
-    '''
     '''
     ########## IMPORTANT #####
     outputTar_obj.seek(0)

@@ -4,6 +4,13 @@ import libsbml
 
 import logging
 
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+    datefmt='%d-%m-%Y %H:%M:%S',
+)
+
 ## Class to simulate an rpsbml object using different FBA types and objective functions
 #
 # At this point we want to have the BIOMASS, target and shared objective
@@ -66,7 +73,7 @@ class rpFBA:
 
 
     ## Method to harcode into BRSynth annotations the results of a COBRA analysis
-    #
+    # #TODO: move this to rpSBML
     #
     def writeAnalysisResults(self, objective_id, cobra_results, pathway_id='rp_pathway'):
         groups = self.rpsbml.model.getPlugin('groups')
@@ -128,10 +135,7 @@ class rpFBA:
     def runFBA(self, reaction_id, is_max=True, pathway_id='rp_pathway', objective_id=None):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        if not objective_id:
-            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], is_max)
-        else:
-            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], is_max, objective_id)
+        objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], is_max, objective_id)
         #run the FBA
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
@@ -147,10 +151,7 @@ class rpFBA:
     def runParsimoniousFBA(self, reaction_id, fraction_of_optimum=0.95, is_max=True, pathway_id='rp_pathway', objective_id=None):
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        if not objective_id:
-            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], is_max)
-        else:
-            objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], is_max, objective_id)
+        objective_id = self.rpsbml.findCreateObjective([reaction_id], [1], is_max, objective_id)
         #run the FBA
         self._checklibSBML(fbc_plugin.setActiveObjectiveId(objective_id),
                 'Setting active objective '+str(objective_id))
@@ -194,9 +195,7 @@ class rpFBA:
         #TODO: add another to check if the objective id exists
         if not objective_id:
             objective_id = 'obj_'+str(target_reaction)+'__restricted_'+str(source_reaction)
-            self.rpsbml.createMultiFluxObj(objective_id, ['RP1_sink'], [1])
-        else:
-            self.rpsbml.createMultiFluxObj(objective_id, ['RP1_sink'], [1])
+        objective_id = self.rpsbml.findCreateObjective([target_reaction], [1], is_max, objective_id)
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               source_flux*fraction_of_source,
                                                                               source_flux*fraction_of_source)
