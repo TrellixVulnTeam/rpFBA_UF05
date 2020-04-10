@@ -178,10 +178,11 @@ def singleFBA_hdd(file_name,
                   is_max,
                   fraction_of,
                   tmpOutputFolder,
-                  dontMerge,
-                  pathway_id,
-                  compartment_id,
-                  fill_orphan_species):
+                  dont_merge=True,
+                  pathway_id='rp_pathway',
+                  objective_id=None,
+                  compartment_id='MNXC3',
+                  fill_orphan_species=False):
     rpsbml = rpSBML.rpSBML(file_name)
     rpsbml.readSBML(sbml_path)
     #input_rpsbml = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
@@ -191,13 +192,13 @@ def singleFBA_hdd(file_name,
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
-        rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of, pathway_id)
+        rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of, pathway_id, objective_id)
     ####### FBA ########
     elif sim_type=='fba':
-        rpfba.runFBA(target_reaction, is_max, pathway_id)
+        rpfba.runFBA(target_reaction, is_max, pathway_id, objective_id)
     ####### pFBA #######
     elif sim_type=='pfba':
-        rpfba.runParsimoniousFBA(target_reaction, fraction_of, is_max, pathway_id)
+        rpfba.runParsimoniousFBA(target_reaction, fraction_of, is_max, pathway_id, objective_id)
     else:
         logging.error('Cannot recognise sim_type: '+str(sim_type))
     '''
@@ -205,7 +206,7 @@ def singleFBA_hdd(file_name,
     elif sim_type=='multi_fba':
         rpfba.runMultiObjective(reactions, coefficients, is_max, pathway_id)
     '''
-    if dontMerge:
+    if dont_merge:
         groups = rpfba.rpsbml.model.getPlugin('groups')
         rp_pathway = groups.getGroup(pathway_id)
         for member in rp_pathway.getListOfMembers():
@@ -255,8 +256,9 @@ def runFBA_hdd(inputTar,
                target_coefficient,
                isMax,
                fraction_of,
-               dontMerge,
+               dont_merge=True,
                pathway_id='rp_pathway',
+               objective_id=None,
                compartment_id='MNXC3',
                fill_orphan_species=False):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
@@ -282,8 +284,9 @@ def runFBA_hdd(inputTar,
                                   isMax,
                                   fraction_of,
                                   tmpOutputFolder,
-                                  dontMerge,
+                                  dont_merge,
                                   pathway_id,
+                                  objective_id,
                                   compartment_id,
                                   fill_orphan_species)
                 except OSError as e:
@@ -317,9 +320,10 @@ def runFBA_multi(inputTar,
                  target_coefficient,
                  is_max,
                  fraction_of,
-                 dontMerge,
+                 dont_merge=True,
                  num_workers=10,
                  pathway_id='rp_pathway',
+                 objective_id=None,
                  compartment_id='MNXC3',
                  fill_orphan_species=False):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
@@ -346,8 +350,9 @@ def runFBA_multi(inputTar,
                                                                      is_max,
                                                                      fraction_of,
                                                                      tmpOutputFolder,
-                                                                     dontMerge,
+                                                                     dont_merge,
                                                                      pathway_id,
+                                                                     objective_id=None,
                                                                      compartment_id,
                                                                      fill_orphan_species,)))
             output = [p.get() for p in results]
@@ -381,10 +386,11 @@ def main(input_path,
          target_coefficient,
          is_max,
          fraction_of,
-         dont_merge,
-         num_workers,
-         pathway_id,
-         compartment_id):
+         dont_merge=True,
+         num_workers=10,
+         pathway_id='rp_pathway',
+         objective_id=None,
+         compartment_id='MNXC3'):
     #outputTar_obj = io.BytesIO()
     runFBA_multi(input_path,
                  gem_sbml,
@@ -399,6 +405,7 @@ def main(input_path,
                  bool(dont_merge),
                  int(num_workers),
                  str(pathway_id),
+                 objective_id,
                  str(compartment_id))
     '''DEPRECATED
     runFBA_hdd(input_bytes,
@@ -413,6 +420,7 @@ def main(input_path,
                float(fraction_of),
                bool(dont_merge),
                str(pathway_id),
+               objective_id,
                str(compartment_id))
     '''
     '''
