@@ -238,6 +238,7 @@ def singleFBA_hdd(file_name,
             else:
                 target_fbc.addObjective(source_obj)
         #rpsbml.createMultiFluxObj('obj_RP1_sink', ['RP1_sink'], [1])
+        target_fbc.setActiveObjectiveId(target_objID[0]) #tmp random assigenement of objective
         rpsbml.writeSBML(tmpOutputFolder)
     else:
         rpfba.rpsbml.writeSBML(tmpOutputFolder)
