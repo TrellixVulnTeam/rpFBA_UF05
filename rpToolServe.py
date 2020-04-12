@@ -228,6 +228,7 @@ def singleFBA_hdd(file_name,
         target_fbc = rpsbml.model.getPlugin('fbc')
         target_objID = [i.getId() for i in target_fbc.getListOfObjectives()]
         for source_obj in source_fbc.getListOfObjectives():
+            source_obj_id = source_obj.getId()
             if source_obj.getId() in target_objID:
                 target_obj = target_fbc.getObjective(source_obj.getId())
                 target_obj.setAnnotation(source_obj.getAnnotation())
@@ -238,7 +239,7 @@ def singleFBA_hdd(file_name,
             else:
                 target_fbc.addObjective(source_obj)
         #rpsbml.createMultiFluxObj('obj_RP1_sink', ['RP1_sink'], [1])
-        target_fbc.setActiveObjectiveId(target_objID[0]) #tmp random assigenement of objective
+        target_fbc.setActiveObjectiveId(source_obj_id) #tmp random assigenement of objective
         rpsbml.writeSBML(tmpOutputFolder)
     else:
         rpfba.rpsbml.writeSBML(tmpOutputFolder)
