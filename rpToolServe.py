@@ -207,6 +207,7 @@ def singleFBA_hdd(file_name,
         rpfba.runMultiObjective(reactions, coefficients, is_max, pathway_id)
     '''
     if dont_merge:
+        logging.info('Returning model with heterologous pathway only')
         groups = rpfba.rpsbml.model.getPlugin('groups')
         rp_pathway = groups.getGroup(pathway_id)
         for member in rp_pathway.getListOfMembers():
@@ -242,6 +243,7 @@ def singleFBA_hdd(file_name,
         target_fbc.setActiveObjectiveId(source_obj_id) #tmp random assigenement of objective
         rpsbml.writeSBML(tmpOutputFolder)
     else:
+        logging.info('Returning the full model')
         rpfba.rpsbml.writeSBML(tmpOutputFolder)
 
 
@@ -426,11 +428,3 @@ def main(input_path,
                str(pathway_id),
                objective_id,
                str(compartment_id))
-    '''
-    ########## IMPORTANT #####
-    outputTar_obj.seek(0)
-    ##########################
-    with open(output_path, 'wb') as f:
-        shutil.copyfileobj(outputTar_obj, f, length=131072)
-    '''
-
