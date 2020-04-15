@@ -8,6 +8,7 @@ Created on September 21 2019
 """
 import argparse
 import sys
+import logging
 import tempfile
 import tarfile
 import glob
@@ -22,10 +23,11 @@ import rpToolServe
 if __name__ == "__main__":
     parser = argparse.ArgumentParser('Python wrapper to calculate FBA to generate rpFBA collection')
     parser.add_argument('-input', type=str)
-    parser.add_argument('-input_format', type=str, default='tar')
+    parser.add_argument('-input_format', type=str)
     parser.add_argument('-gem_sbml', type=str)
     parser.add_argument('-output', type=str)
     parser.add_argument('-pathway_id', type=str, default='rp_pathway')
+    parser.add_argument('-objective_id', type=str, default='None')
     parser.add_argument('-compartment_id', type=str, default='MNXC3')
     parser.add_argument('-sim_type', type=str, default='fraction')
     parser.add_argument('-source_reaction', type=str, default='biomass')
@@ -33,9 +35,9 @@ if __name__ == "__main__":
     parser.add_argument('-source_coefficient', type=float, default=1.0)
     parser.add_argument('-target_coefficient', type=float, default=1.0)
     parser.add_argument('-num_workers', type=int, default=10)
-    parser.add_argument('-is_max', type=str, default=True)
+    parser.add_argument('-is_max', type=str, default='True')
     parser.add_argument('-fraction_of', type=float, default=0.75)
-    parser.add_argument('-dont_merge', type=bool, default=True)
+    parser.add_argument('-dont_merge', type=str, default='True')
     params = parser.parse_args()
     if params.fraction_of<=0.0:
         logging.error('Cannot have -fraction_of less or equal than 0: '+str(params.fraction_of))
@@ -53,6 +55,10 @@ if __name__ == "__main__":
     else:
         logging.error('Cannot interpret '+str(params.dont_merge))
         exit(1)
+    if params.objective_id=='None':
+        objective_id = None
+    else:
+        objective_id = params.objective_id
     if params.input_format=='tar': 
         rpToolServe.main(params.input,
                          params.gem_sbml,
@@ -67,6 +73,7 @@ if __name__ == "__main__":
                          dont_merge,
                          params.num_workers,
                          params.pathway_id,
+                         objective_id,
                          params.compartment_id)
     elif params.input_format=='sbml': 
         #make the tar.xz 
@@ -91,6 +98,7 @@ if __name__ == "__main__":
                              dont_merge,
                              params.num_workers,
                              params.pathway_id,
+                             objective_id,
                              params.compartment_id)
             with tarfile.open(output_tar) as outTar:
                 outTar.extractall(tmpOutputFolder)

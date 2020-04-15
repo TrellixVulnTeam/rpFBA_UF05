@@ -18,6 +18,8 @@ import rpTool as rpFBA
 
 import rpSBML
 
+logging.disable(logging.INFO)
+logging.disable(logging.WARNING)
 
 ###################################################################################
 ################################## processify #####################################
@@ -165,7 +167,7 @@ class nonDeamonicPool(multiprocessing.pool.Pool):
 
 ##
 #
-#
+#singleFBA_hdd
 @processify
 def singleFBA_hdd(file_name,
                   sbml_path,
@@ -178,10 +180,11 @@ def singleFBA_hdd(file_name,
                   is_max,
                   fraction_of,
                   tmpOutputFolder,
-                  dontMerge,
-                  pathway_id,
-                  compartment_id,
-                  fill_orphan_species):
+                  dont_merge=True,
+                  pathway_id='rp_pathway',
+                  objective_id=None,
+                  compartment_id='MNXC3',
+                  fill_orphan_species=False):
     rpsbml = rpSBML.rpSBML(file_name)
     rpsbml.readSBML(sbml_path)
     #input_rpsbml = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
@@ -191,13 +194,13 @@ def singleFBA_hdd(file_name,
     rpfba = rpFBA.rpFBA(input_rpsbml)
     ####### fraction of reaction ######
     if sim_type=='fraction':
-        rpfba.runFractionReaction(source_reaction, target_reaction, fraction_of, pathway_id)
+        rpfba.runFractionReaction(source_reaction, source_coefficient, target_reaction, target_coefficient, fraction_of, is_max, pathway_id, objective_id)
     ####### FBA ########
     elif sim_type=='fba':
-        rpfba.runFBA(target_reaction, is_max, pathway_id)
+        rpfba.runFBA(target_reaction, target_coefficient, is_max, pathway_id, objective_id)
     ####### pFBA #######
     elif sim_type=='pfba':
-        rpfba.runParsimoniousFBA(target_reaction, fraction_of, is_max, pathway_id)
+        rpfba.runParsimoniousFBA(target_reaction, target_coefficient, fraction_of, is_max, pathway_id, objective_id)
     else:
         logging.error('Cannot recognise sim_type: '+str(sim_type))
     '''
@@ -205,7 +208,8 @@ def singleFBA_hdd(file_name,
     elif sim_type=='multi_fba':
         rpfba.runMultiObjective(reactions, coefficients, is_max, pathway_id)
     '''
-    if dontMerge:
+    if dont_merge:
+        logging.info('Returning model with heterologous pathway only')
         groups = rpfba.rpsbml.model.getPlugin('groups')
         rp_pathway = groups.getGroup(pathway_id)
         for member in rp_pathway.getListOfMembers():
@@ -227,6 +231,7 @@ def singleFBA_hdd(file_name,
         target_fbc = rpsbml.model.getPlugin('fbc')
         target_objID = [i.getId() for i in target_fbc.getListOfObjectives()]
         for source_obj in source_fbc.getListOfObjectives():
+            source_obj_id = source_obj.getId()
             if source_obj.getId() in target_objID:
                 target_obj = target_fbc.getObjective(source_obj.getId())
                 target_obj.setAnnotation(source_obj.getAnnotation())
@@ -236,9 +241,11 @@ def singleFBA_hdd(file_name,
                             target_fluxObj.setAnnotation(source_fluxObj.getAnnotation())
             else:
                 target_fbc.addObjective(source_obj)
-        rpsbml.createMultiFluxObj('obj_RP1_sink', ['RP1_sink'], [1])
+        #rpsbml.createMultiFluxObj('obj_RP1_sink', ['RP1_sink'], [1])
+        target_fbc.setActiveObjectiveId(source_obj_id) #tmp random assigenement of objective
         rpsbml.writeSBML(tmpOutputFolder)
     else:
+        logging.info('Returning the full model')
         rpfba.rpsbml.writeSBML(tmpOutputFolder)
 
 
@@ -255,18 +262,23 @@ def runFBA_hdd(inputTar,
                target_coefficient,
                isMax,
                fraction_of,
-               dontMerge,
+               dont_merge=True,
                pathway_id='rp_pathway',
+               objective_id=None,
                compartment_id='MNXC3',
                fill_orphan_species=False):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
-            tar = tarfile.open(inputTar, mode='r:xz')
+            tar = tarfile.open(inputTar, mode='r')
             tar.extractall(path=tmpInputFolder)
             tar.close()
+            if len(glob.glob(tmpInputFolder+'/*'))==0:
+                logging.error('Input file is empty')
+                return False
             #open the model as a string
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
                 fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
+                logging.info('############## '+str(fileName)+' ################')
                 try:
                     singleFBA_hdd(fileName,
                                   sbml_path,
@@ -279,20 +291,25 @@ def runFBA_hdd(inputTar,
                                   isMax,
                                   fraction_of,
                                   tmpOutputFolder,
-                                  dontMerge,
+                                  dont_merge,
                                   pathway_id,
+                                  objective_id,
                                   compartment_id,
                                   fill_orphan_species)
                 except OSError as e:
                     logging.warning(e)
                     logging.warning('Segmentation fault by Cobrapy')
                     pass
-            with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
+            if len(glob.glob(tmpOutputFolder+'/*'))==0:
+                logging.error('rpFBA has not produced any results')
+                return False
+            with tarfile.open(outputTar, mode='w:gz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
-                    fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
+                    fileName = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.sbml.xml'
                     info = tarfile.TarInfo(fileName)
                     info.size = os.path.getsize(sbml_path)
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
+    return True
 
 
 
@@ -310,16 +327,20 @@ def runFBA_multi(inputTar,
                  target_coefficient,
                  is_max,
                  fraction_of,
-                 dontMerge,
+                 dont_merge=True,
                  num_workers=10,
                  pathway_id='rp_pathway',
+                 objective_id=None,
                  compartment_id='MNXC3',
                  fill_orphan_species=False):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
-            tar = tarfile.open(inputTar, mode='r:xz')
+            tar = tarfile.open(inputTar, mode='r')
             tar.extractall(path=tmpInputFolder)
             tar.close()
+            if len(glob.glob(tmpInputFolder+'/*'))==0:
+                logging.error('Input file is empty')
+                return False
             #HERE SPECIFY THE NUMBER OF CORES
             pool = nonDeamonicPool(processes=num_workers)
             results = []
@@ -336,20 +357,25 @@ def runFBA_multi(inputTar,
                                                                      is_max,
                                                                      fraction_of,
                                                                      tmpOutputFolder,
-                                                                     dontMerge,
+                                                                     dont_merge,
                                                                      pathway_id,
+                                                                     objective_id,
                                                                      compartment_id,
                                                                      fill_orphan_species,)))
             output = [p.get() for p in results]
             logging.info(output)
             pool.close()
             pool.join()
-            with tarfile.open(fileobj=outputTar, mode='w:xz') as ot:
+            if len(glob.glob(tmpOutputFolder+'/*'))==0:
+                logging.error('rpFBA has not produced any results')
+                return False
+            with tarfile.open(outputTar, mode='w:gz') as ot:
                 for sbml_path in glob.glob(tmpOutputFolder+'/*'):
-                    file_name = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.rpsbml.xml'
+                    file_name = str(sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', ''))+'.sbml.xml'
                     info = tarfile.TarInfo(file_name)
                     info.size = os.path.getsize(sbml_path)
                     ot.addfile(tarinfo=info, fileobj=open(sbml_path, 'rb'))
+    return True
 
 
 
@@ -367,16 +393,15 @@ def main(input_path,
          target_coefficient,
          is_max,
          fraction_of,
-         dont_merge,
-         num_workers,
-         pathway_id,
-         compartment_id):
-    outputTar_obj = io.BytesIO()
-    #Not sure why on the VM an OSError is thrown
+         dont_merge=True,
+         num_workers=10,
+         pathway_id='rp_pathway',
+         objective_id=None,
+         compartment_id='MNXC3'):
     '''
     runFBA_multi(input_path,
                  gem_sbml,
-                 outputTar_obj,
+                 output_path,
                  str(sim_type),
                  str(source_reaction),
                  str(target_reaction),
@@ -387,11 +412,12 @@ def main(input_path,
                  bool(dont_merge),
                  int(num_workers),
                  str(pathway_id),
+                 objective_id,
                  str(compartment_id))
     '''
-    runFBA_hdd(input_bytes,
+    runFBA_hdd(input_path,
                gem_sbml,
-               outputTar_obj,
+               output_path,
                str(sim_type),
                str(source_reaction),
                str(target_reaction),
@@ -401,10 +427,5 @@ def main(input_path,
                float(fraction_of),
                bool(dont_merge),
                str(pathway_id),
+               objective_id,
                str(compartment_id))
-    ########## IMPORTANT #####
-    outputTar_obj.seek(0)
-    ##########################
-    with open(output_path, 'wb') as f:
-        shutil.copyfileobj(outputTar_obj, f, length=131072)
-
