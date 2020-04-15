@@ -18,6 +18,8 @@ import rpTool as rpFBA
 
 import rpSBML
 
+logging.disable(logging.INFO)
+logging.disable(logging.WARNING)
 
 ###################################################################################
 ################################## processify #####################################
