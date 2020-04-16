@@ -56,10 +56,10 @@ if __name__ == "__main__":
         logging.error('Cannot interpret '+str(params.dont_merge))
         exit(1)
     if params.objective_id=='None':
-        objective_id = None
+        objective_id = 'obj_'+params.sim_type
     else:
         objective_id = params.objective_id
-    if params.input_format=='tar': 
+    if params.input_format=='tar':
         rpToolServe.main(params.input,
                          params.gem_sbml,
                          params.output,
@@ -75,7 +75,7 @@ if __name__ == "__main__":
                          params.pathway_id,
                          objective_id,
                          params.compartment_id)
-    elif params.input_format=='sbml': 
+    elif params.input_format=='sbml':
         #make the tar.xz 
         with tempfile.TemporaryDirectory() as tmpOutputFolder:
             input_tar = tmpOutputFolder+'/tmp_input.tar.xz'

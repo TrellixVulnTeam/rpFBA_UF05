@@ -18,8 +18,16 @@ import rpTool as rpFBA
 
 import rpSBML
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+    datefmt='%d-%m-%Y %H:%M:%S',
+)
+
+'''
 logging.disable(logging.INFO)
 logging.disable(logging.WARNING)
+'''
 
 ###################################################################################
 ################################## processify #####################################
@@ -187,11 +195,11 @@ def singleFBA_hdd(file_name,
                   fill_orphan_species=False):
     rpsbml = rpSBML.rpSBML(file_name)
     rpsbml.readSBML(sbml_path)
-    #input_rpsbml = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
-    input_rpsbml = rpSBML.rpSBML(file_name)
-    input_rpsbml.readSBML(gem_sbml)
-    rpsbml.mergeModels(input_rpsbml)
-    rpfba = rpFBA.rpFBA(input_rpsbml)
+    #rpsbml_gem = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
+    rpsbml_gem = rpSBML.rpSBML(file_name)
+    rpsbml_gem.readSBML(gem_sbml)
+    rpsbml.mergeModels(rpsbml_gem)
+    rpfba = rpFBA.rpFBA(rpsbml_gem)
     ####### fraction of reaction ######
     if sim_type=='fraction':
         rpfba.runFractionReaction(source_reaction, source_coefficient, target_reaction, target_coefficient, fraction_of, is_max, pathway_id, objective_id)
