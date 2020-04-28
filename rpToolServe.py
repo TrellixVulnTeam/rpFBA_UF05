@@ -24,10 +24,8 @@ logging.basicConfig(
     datefmt='%d-%m-%Y %H:%M:%S',
 )
 
-'''
 logging.disable(logging.INFO)
 logging.disable(logging.WARNING)
-'''
 
 ###################################################################################
 ################################## processify #####################################
@@ -288,6 +286,8 @@ def runFBA_hdd(inputTar,
                 fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
                 logging.info('############## '+str(fileName)+' ################')
                 try:
+                    #logging.info('Running single FBA with the following parameters:')
+                    #logging.info('\t')
                     singleFBA_hdd(fileName,
                                   sbml_path,
                                   gem_sbml,
@@ -371,7 +371,6 @@ def runFBA_multi(inputTar,
                                                                      compartment_id,
                                                                      fill_orphan_species,)))
             output = [p.get() for p in results]
-            logging.info(output)
             pool.close()
             pool.join()
             if len(glob.glob(tmpOutputFolder+'/*'))==0:
@@ -405,9 +404,9 @@ def main(input_path,
          num_workers=10,
          pathway_id='rp_pathway',
          objective_id=None,
-         compartment_id='MNXC3'):
+         compartment_id='MNXC3',
+         fill_orphan_species=None):
     #outputTar_obj = io.BytesIO()
-    '''
     runFBA_multi(input_path,
                  gem_sbml,
                  output_path,
@@ -416,13 +415,14 @@ def main(input_path,
                  str(target_reaction),
                  float(source_coefficient),
                  float(target_coefficient),
-                 bool(is_max),
+                 is_max,
                  float(fraction_of),
                  bool(dont_merge),
                  int(num_workers),
                  str(pathway_id),
                  objective_id,
-                 str(compartment_id))
+                 str(compartment_id),
+                 fill_orphan_species)
     '''
     runFBA_hdd(input_path,
                gem_sbml,
@@ -432,9 +432,10 @@ def main(input_path,
                str(target_reaction),
                float(source_coefficient),
                float(target_coefficient),
-               bool(is_max),
+               is_max,
                float(fraction_of),
                bool(dont_merge),
                str(pathway_id),
                objective_id,
                str(compartment_id))
+    '''

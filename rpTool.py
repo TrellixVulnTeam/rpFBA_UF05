@@ -95,16 +95,15 @@ class rpFBA:
         self._checklibSBML(obj, 'Getting objective '+str(objective_id))
         self.rpsbml.addUpdateBRSynth(obj, 'flux_value', str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
         self.logger.info('Set the objective '+str(objective_id)+' a flux_value of '+str(cobra_results.objective_value))
-        self.logger.info(obj.getListOfFluxObjectives())
         for flux_obj in obj.getListOfFluxObjectives():
             #sometimes flux cannot be returned
             if cobra_results.fluxes.get(flux_obj.getReaction())==None:
                 self.logger.warning('Cobra BUG: Cannot retreive '+str(flux_obj.getReaction())+' flux from cobrapy... setting to 0.0')
                 self.rpsbml.addUpdateBRSynth(flux_obj, 'flux_value', str(0.0), 'mmol_per_gDW_per_hr', False)
-                self.logger.info('Set the objective '+str(flux_obj.getId())+' a flux_value of '+str(0.0))
+                self.logger.info('Set the reaction '+str(flux_obj.getReaction())+' a flux_value of '+str(0.0))
             else:
                 self.rpsbml.addUpdateBRSynth(flux_obj, 'flux_value', str(cobra_results.fluxes.get(flux_obj.getReaction())), 'mmol_per_gDW_per_hr', False)
-                self.logger.info('Set the objective '+str(flux_obj.getId())+' a flux_value of '+str(cobra_results.fluxes.get(flux_obj.getReaction())))
+                self.logger.info('Set the reaction '+str(flux_obj.getReaction())+' a flux_value of '+str(cobra_results.fluxes.get(flux_obj.getReaction())))
         #write all the results to the reactions of pathway_id
         for member in rp_pathway.getListOfMembers():
             reac = self.rpsbml.model.getReaction(member.getIdRef())
