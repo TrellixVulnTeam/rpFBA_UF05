@@ -56,6 +56,8 @@ class rpFBA:
         try:
             with tempfile.TemporaryDirectory() as tmpOutputFolder:
                 self.rpsbml.writeSBML(tmpOutputFolder)
+                logging.info(glob.glob(tmpOutputFolder+'/*'))
+                #logging.info(cobra.io.validate_sbml_model(glob.glob(tmpOutputFolder+'/*')[0]))
                 self.cobraModel = cobra.io.read_sbml_model(glob.glob(tmpOutputFolder+'/*')[0], use_fbc_package=True)
             #self.cobraModel = cobra.io.read_sbml_model(self.rpsbml.document.toXMLNode().toXMLString(), use_fbc_package=True)
             #use CPLEX
@@ -195,9 +197,12 @@ class rpFBA:
         source_obj_id = self.rpsbml.findCreateObjective([source_reaction], [source_coefficient], is_max)
         #TODO: use the rpSBML BRSynth annotation parser
         source_flux = None
-        fbc_obj = fbc_plugin.getObjective(source_obj_id)
-        fbc_obj_annot = fbc_obj.getAnnotation()
         try:
+            fbc_obj = fbc_plugin.getObjective(source_obj_id)
+            #TODO: if this is None need to set it up 
+            fbc_obj_annot = fbc_obj.getAnnotation()
+            if not fbc_obj_annot:
+                raise ValueError
             source_flux = float(fbc_obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
             self.logger.info('Already calculated flux for '+str(source_obj_id))
         except (AttributeError, ValueError) as e:

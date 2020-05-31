@@ -39,8 +39,12 @@ if __name__ == "__main__":
     parser.add_argument('-fraction_of', type=float, default=0.75)
     parser.add_argument('-dont_merge', type=str, default='True')
     params = parser.parse_args()
+    if params.num_workers>=20 or params.num_workers<=0:
+        logging.error('Cannot have more than 20 and 0 or less workers: '+str(params.num_workers))
+        exit(1)
     if params.fraction_of<=0.0:
         logging.error('Cannot have -fraction_of less or equal than 0: '+str(params.fraction_of))
+        exit(1)
     if params.is_max==True or params.is_max=='True' or params.is_max=='true':
         is_max = True
     elif params.is_max==False or params.is_max=='False' or params.is_max=='false':

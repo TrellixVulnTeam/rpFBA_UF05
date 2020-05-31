@@ -24,8 +24,10 @@ logging.basicConfig(
     datefmt='%d-%m-%Y %H:%M:%S',
 )
 
+'''
 logging.disable(logging.INFO)
 logging.disable(logging.WARNING)
+'''
 
 ###################################################################################
 ################################## processify #####################################
@@ -407,35 +409,40 @@ def main(input_path,
          compartment_id='MNXC3',
          fill_orphan_species=None):
     #outputTar_obj = io.BytesIO()
-    runFBA_multi(input_path,
-                 gem_sbml,
-                 output_path,
-                 str(sim_type),
-                 str(source_reaction),
-                 str(target_reaction),
-                 float(source_coefficient),
-                 float(target_coefficient),
-                 is_max,
-                 float(fraction_of),
-                 bool(dont_merge),
-                 int(num_workers),
-                 str(pathway_id),
-                 objective_id,
-                 str(compartment_id),
-                 fill_orphan_species)
-    '''
-    runFBA_hdd(input_path,
-               gem_sbml,
-               output_path,
-               str(sim_type),
-               str(source_reaction),
-               str(target_reaction),
-               float(source_coefficient),
-               float(target_coefficient),
-               is_max,
-               float(fraction_of),
-               bool(dont_merge),
-               str(pathway_id),
-               objective_id,
-               str(compartment_id))
-    '''
+    if num_workers==1:
+        runFBA_hdd(input_path,
+                   gem_sbml,
+                   output_path,
+                   str(sim_type),
+                   str(source_reaction),
+                   str(target_reaction),
+                   float(source_coefficient),
+                   float(target_coefficient),
+                   is_max,
+                   float(fraction_of),
+                   bool(dont_merge),
+                   str(pathway_id),
+                   objective_id,
+                   str(compartment_id))
+        return True
+    elif num_workers>1:
+        runFBA_multi(input_path,
+                     gem_sbml,
+                     output_path,
+                     str(sim_type),
+                     str(source_reaction),
+                     str(target_reaction),
+                     float(source_coefficient),
+                     float(target_coefficient),
+                     is_max,
+                     float(fraction_of),
+                     bool(dont_merge),
+                     int(num_workers),
+                     str(pathway_id),
+                     objective_id,
+                     str(compartment_id),
+                     fill_orphan_species)
+        return True
+    else:
+        logging.error('Cannot have 0 or less workers: '+str(num_workers))
+        return False
