@@ -230,6 +230,8 @@ class rpFBA:
         #self.logger.info('findCreateObjective() for '+str(objective_id))
         objective_id = self.rpsbml.findCreateObjective([target_reaction], [target_coefficient], is_max, objective_id)
         self.logger.info('Optimising the objective: '+str(objective_id))
+        self.logger.info('Setting upper bound: '+str(source_flux*fraction_of_source))
+        self.logger.info('Setting loer bound: '+str(source_flux*fraction_of_source))
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               source_flux*fraction_of_source,
                                                                               source_flux*fraction_of_source)
@@ -240,6 +242,9 @@ class rpFBA:
             return False
         cobra_results = self.cobraModel.optimize()
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
+        ##### print the biomass results ######
+        self.logger.info('Biomass: '+str(cobra_results.fluxes.biomass))
+        self.logger.info('Target: '+str(cobra_results.fluxes.RP1_sink))
         #reset the bounds to the original values for the target
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               old_upper_bound,

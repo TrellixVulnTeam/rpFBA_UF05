@@ -24,10 +24,8 @@ logging.basicConfig(
     datefmt='%d-%m-%Y %H:%M:%S',
 )
 
-'''
-logging.disable(logging.INFO)
-logging.disable(logging.WARNING)
-'''
+#logging.disable(logging.INFO)
+#logging.disable(logging.WARNING)
 
 ###################################################################################
 ################################## processify #####################################
@@ -192,14 +190,23 @@ def singleFBA_hdd(file_name,
                   pathway_id='rp_pathway',
                   objective_id=None,
                   compartment_id='MNXC3',
-                  fill_orphan_species=False):
+                  fill_orphan_species=False,
+                  species_group_id='central_species'):
     rpsbml = rpSBML.rpSBML(file_name)
     rpsbml.readSBML(sbml_path)
+    #Save the central species
+    groups = rpsbml.model.getPlugin('groups')
+    central = groups.getGroup(species_group_id)
+    cent_spe = [str(i.getIdRef()) for i in central.getListOfMembers()]
+    logging.info('old central species: '+str(cent_spe))
     #rpsbml_gem = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
     rpsbml_gem = rpSBML.rpSBML(file_name)
     rpsbml_gem.readSBML(gem_sbml)
     rpsbml.mergeModels(rpsbml_gem)
-    rpfba = rpFBA.rpFBA(rpsbml_gem)
+    #TO REMOVE
+    #rpsbml_gem.modelName = 'test'
+    #rpsbml_gem.writeSBML(tmpOutputFolder)
+    #rpfba = rpFBA.rpFBA(rpsbml_gem)
     ####### fraction of reaction ######
     if sim_type=='fraction':
         rpfba.runFractionReaction(source_reaction, source_coefficient, target_reaction, target_coefficient, fraction_of, is_max, pathway_id, objective_id)
@@ -231,7 +238,21 @@ def singleFBA_hdd(file_name,
         target_groups = rpsbml.model.getPlugin('groups')
         target_groupsID = [i.getId() for i in target_groups.getListOfGroups()]
         for source_group in source_groups.getListOfGroups():
-            if source_group.getId() in target_groupsID:
+            #logging.info('Replacing group id: '+str(source_group.getId()))
+            if source_group.getId()==species_group_id:
+                target_group = target_groups.getGroup(source_group.getId())
+                #TODO: #### replace the new potentially incorect central species with the normal ones #####
+                #delete all the previous members
+                logging.info('Removing central_species')
+                for i in range(target_group.getNumMembers()):
+                    logging.info('Deleting group member: '+str(target_group.getMember(0).getIdRef()))
+                    target_group.removeMember(0)
+                #add the new ones
+                for cs in cent_spe:
+                    logging.info('Creating new member: '+str(cs))
+                    newM = target_group.createMember()
+                    newM.setIdRef(cs)  
+            elif source_group.getId() in target_groupsID:
                 target_group = target_groups.getGroup(source_group.getId())
                 target_group.setAnnotation(source_group.getAnnotation())
         #### add objectives ####
@@ -274,7 +295,8 @@ def runFBA_hdd(inputTar,
                pathway_id='rp_pathway',
                objective_id=None,
                compartment_id='MNXC3',
-               fill_orphan_species=False):
+               fill_orphan_species=False,
+               species_group_id='central_species'):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
             tar = tarfile.open(inputTar, mode='r')
@@ -305,7 +327,8 @@ def runFBA_hdd(inputTar,
                                   pathway_id,
                                   objective_id,
                                   compartment_id,
-                                  fill_orphan_species)
+                                  fill_orphan_species,
+                                  species_group_id)
                 except OSError as e:
                     logging.warning(e)
                     logging.warning('Segmentation fault by Cobrapy')
@@ -342,7 +365,8 @@ def runFBA_multi(inputTar,
                  pathway_id='rp_pathway',
                  objective_id=None,
                  compartment_id='MNXC3',
-                 fill_orphan_species=False):
+                 fill_orphan_species=False,
+                 species_group_id='central_species'):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
             tar = tarfile.open(inputTar, mode='r')
@@ -371,7 +395,8 @@ def runFBA_multi(inputTar,
                                                                      pathway_id,
                                                                      objective_id,
                                                                      compartment_id,
-                                                                     fill_orphan_species,)))
+                                                                     fill_orphan_species,
+                                                                     species_group_id,)))
             output = [p.get() for p in results]
             pool.close()
             pool.join()
@@ -407,7 +432,8 @@ def main(input_path,
          pathway_id='rp_pathway',
          objective_id=None,
          compartment_id='MNXC3',
-         fill_orphan_species=None):
+         fill_orphan_species=None,
+         species_group_id='central_species'):
     #outputTar_obj = io.BytesIO()
     if num_workers==1:
         runFBA_hdd(input_path,
@@ -423,7 +449,8 @@ def main(input_path,
                    bool(dont_merge),
                    str(pathway_id),
                    objective_id,
-                   str(compartment_id))
+                   str(compartment_id),
+                   str(species_group_id))
         return True
     elif num_workers>1:
         runFBA_multi(input_path,
@@ -441,7 +468,8 @@ def main(input_path,
                      str(pathway_id),
                      objective_id,
                      str(compartment_id),
-                     fill_orphan_species)
+                     fill_orphan_species,
+                     str(species_group_id))
         return True
     else:
         logging.error('Cannot have 0 or less workers: '+str(num_workers))
