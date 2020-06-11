@@ -81,6 +81,7 @@ if __name__ == "__main__":
                          params.pathway_id,
                          objective_id,
                          params.compartment_id,
+                         None, #this is fillorphanspecies
                          params.species_group_id,
                          params.sink_species_group_id)
     elif params.input_format=='sbml':
@@ -108,6 +109,7 @@ if __name__ == "__main__":
                              params.pathway_id,
                              objective_id,
                              params.compartment_id,
+                             None, #this is filloorphanspecies
                              params.species_group_id,
                              params.sink_species_group_id)
             with tarfile.open(output_tar, mode='r') as outTar:

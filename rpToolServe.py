@@ -193,19 +193,17 @@ def singleFBA_hdd(file_name,
                   fill_orphan_species=False,
                   species_group_id='central_species',
                   sink_species_group_id='rp_sink_species'):
-    rpsbml = rpSBML.rpSBML(file_name)
-    rpsbml.readSBML(sbml_path)
+    rpsbml = rpSBML.rpSBML(file_name, path=sbml_path)
     #Save the central species
     groups = rpsbml.model.getPlugin('groups')
     central = groups.getGroup(species_group_id)
     sink_group = groups.getGroup(sink_species_group_id)
     cent_spe = [str(i.getIdRef()) for i in central.getListOfMembers()]
-    sink_spe = [str(i.getIdRef()) for i in central.getListOfMembers()]
+    sink_spe = [str(i.getIdRef()) for i in sink_group.getListOfMembers()]
     logging.info('old central species: '+str(cent_spe))
     logging.info('old sink species: '+str(sink_spe))
     #rpsbml_gem = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
-    rpsbml_gem = rpSBML.rpSBML(file_name)
-    rpsbml_gem.readSBML(gem_sbml)
+    rpsbml_gem = rpSBML.rpSBML(file_name, path=gem_sbml)
     rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id)
     #TO REMOVE
     #rpsbml_gem.modelName = 'test'
@@ -470,6 +468,7 @@ def main(input_path,
                    str(pathway_id),
                    objective_id,
                    str(compartment_id),
+                   fill_orphan_species,
                    str(species_group_id),
                    str(sink_species_group_id))
         return True
