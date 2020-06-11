@@ -27,6 +27,8 @@ if __name__ == "__main__":
     parser.add_argument('-gem_sbml', type=str)
     parser.add_argument('-output', type=str)
     parser.add_argument('-pathway_id', type=str, default='rp_pathway')
+    parser.add_argument('-sink_species_group_id', type=str, default='rp_sink_species')
+    parser.add_argument('-species_group_id', type=str, default='central_species')
     parser.add_argument('-objective_id', type=str, default='None')
     parser.add_argument('-compartment_id', type=str, default='MNXC3')
     parser.add_argument('-sim_type', type=str, default='fraction')
@@ -78,7 +80,9 @@ if __name__ == "__main__":
                          params.num_workers,
                          params.pathway_id,
                          objective_id,
-                         params.compartment_id)
+                         params.compartment_id,
+                         params.species_group_id,
+                         params.sink_species_group_id)
     elif params.input_format=='sbml':
         #make the tar.xz 
         with tempfile.TemporaryDirectory() as tmpOutputFolder:
@@ -103,7 +107,9 @@ if __name__ == "__main__":
                              params.num_workers,
                              params.pathway_id,
                              objective_id,
-                             params.compartment_id)
+                             params.compartment_id,
+                             params.species_group_id,
+                             params.sink_species_group_id)
             with tarfile.open(output_tar, mode='r') as outTar:
                 outTar.extractall(tmpOutputFolder)
             out_file = glob.glob(tmpOutputFolder+'/*.sbml.xml')

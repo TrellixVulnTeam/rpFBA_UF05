@@ -14,26 +14,6 @@ import shutil
 import docker
 
 
-'''
-    main(params.input,
-         params.input_format,
-         params.gem_sbml,
-         params.output,
-         params.pathway_id,
-         params.objective_id,
-         params.compartment_id,
-         params.sim_type,
-         params.source_reaction,
-         params.target_reaction,
-         params.source_coefficient,
-         params.target_coefficient,
-         params.num_workers
-         params.is_max,
-         params.fraction_of,
-         params.dont_merge)
-
-'''
-
 ##
 #
 #
@@ -42,6 +22,8 @@ def main(inputfile,
          gem_sbml,
          output,
          pathway_id='rp_pathway',
+         species_group_id='central_species',
+         sink_species_group_id='rp_sink_species',
 		 objective_id='None',
          compartment_id='MNXC3',
          sim_type='fraction',
@@ -95,6 +77,10 @@ def main(inputfile,
                    str(pathway_id),
                    '-objective_id',
                    str(objective_id),
+                   '-species_group_id',
+                   str(species_group_id),
+                   '-sink_species_group_id',
+                   str(sink_species_group_id),
                    '-output',
                    '/home/tmp_output/output.dat',
                    '-compartment_id',
@@ -132,6 +118,8 @@ if __name__ == "__main__":
     parser.add_argument('-gem_sbml', type=str)
     parser.add_argument('-output', type=str)
     parser.add_argument('-pathway_id', type=str, default='rp_pathway')
+    parser.add_argument('-sink_species_group_id', type=str, default='rp_sink_species')
+    parser.add_argument('-species_group_id', type=str, default='central_species')
     parser.add_argument('-objective_id', type=str, default='None')
     parser.add_argument('-compartment_id', type=str, default='MNXC3')
     parser.add_argument('-sim_type', type=str, default='fraction')
@@ -150,6 +138,8 @@ if __name__ == "__main__":
          params.gem_sbml,
          params.output,
          params.pathway_id,
+         params.species_group_id,
+         params.sink_species_group_id,
 		 params.objective_id,
          params.compartment_id,
          params.sim_type,

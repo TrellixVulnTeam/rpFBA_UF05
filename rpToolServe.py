@@ -24,8 +24,8 @@ logging.basicConfig(
     datefmt='%d-%m-%Y %H:%M:%S',
 )
 
-#logging.disable(logging.INFO)
-#logging.disable(logging.WARNING)
+logging.disable(logging.INFO)
+logging.disable(logging.WARNING)
 
 ###################################################################################
 ################################## processify #####################################
@@ -191,22 +191,26 @@ def singleFBA_hdd(file_name,
                   objective_id=None,
                   compartment_id='MNXC3',
                   fill_orphan_species=False,
-                  species_group_id='central_species'):
+                  species_group_id='central_species',
+                  sink_species_group_id='rp_sink_species'):
     rpsbml = rpSBML.rpSBML(file_name)
     rpsbml.readSBML(sbml_path)
     #Save the central species
     groups = rpsbml.model.getPlugin('groups')
     central = groups.getGroup(species_group_id)
+    sink_group = groups.getGroup(sink_species_group_id)
     cent_spe = [str(i.getIdRef()) for i in central.getListOfMembers()]
+    sink_spe = [str(i.getIdRef()) for i in central.getListOfMembers()]
     logging.info('old central species: '+str(cent_spe))
+    logging.info('old sink species: '+str(sink_spe))
     #rpsbml_gem = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
     rpsbml_gem = rpSBML.rpSBML(file_name)
     rpsbml_gem.readSBML(gem_sbml)
-    rpsbml.mergeModels(rpsbml_gem)
+    rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id)
     #TO REMOVE
     #rpsbml_gem.modelName = 'test'
-    #rpsbml_gem.writeSBML(tmpOutputFolder)
-    #rpfba = rpFBA.rpFBA(rpsbml_gem)
+    #rpsbml_gem.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpFBA_image/tmp_out/')
+    rpfba = rpFBA.rpFBA(rpsbml_gem)
     ####### fraction of reaction ######
     if sim_type=='fraction':
         rpfba.runFractionReaction(source_reaction, source_coefficient, target_reaction, target_coefficient, fraction_of, is_max, pathway_id, objective_id)
@@ -249,6 +253,17 @@ def singleFBA_hdd(file_name,
                     target_group.removeMember(0)
                 #add the new ones
                 for cs in cent_spe:
+                    logging.info('Creating new member: '+str(cs))
+                    newM = target_group.createMember()
+                    newM.setIdRef(cs)  
+            if source_group.getId()==sink_species_group_id:
+                target_group = target_groups.getGroup(source_group.getId())
+                logging.info('Removing sink species')
+                for i in range(target_group.getNumMembers()):
+                    logging.info('Deleting group member: '+str(target_group.getMember(0).getIdRef()))
+                    target_group.removeMember(0)
+                #add the new ones
+                for cs in sink_spe:
                     logging.info('Creating new member: '+str(cs))
                     newM = target_group.createMember()
                     newM.setIdRef(cs)  
@@ -296,7 +311,8 @@ def runFBA_hdd(inputTar,
                objective_id=None,
                compartment_id='MNXC3',
                fill_orphan_species=False,
-               species_group_id='central_species'):
+               species_group_id='central_species',
+               sink_species_group_id='rp_sink_species'):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
             tar = tarfile.open(inputTar, mode='r')
@@ -328,7 +344,8 @@ def runFBA_hdd(inputTar,
                                   objective_id,
                                   compartment_id,
                                   fill_orphan_species,
-                                  species_group_id)
+                                  species_group_id,
+                                  sink_species_group_id)
                 except OSError as e:
                     logging.warning(e)
                     logging.warning('Segmentation fault by Cobrapy')
@@ -366,7 +383,8 @@ def runFBA_multi(inputTar,
                  objective_id=None,
                  compartment_id='MNXC3',
                  fill_orphan_species=False,
-                 species_group_id='central_species'):
+                 species_group_id='central_species',
+                 sink_species_group_id='rp_sink_species'):
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
             tar = tarfile.open(inputTar, mode='r')
@@ -396,7 +414,8 @@ def runFBA_multi(inputTar,
                                                                      objective_id,
                                                                      compartment_id,
                                                                      fill_orphan_species,
-                                                                     species_group_id,)))
+                                                                     species_group_id,
+                                                                     sink_species_group_id,)))
             output = [p.get() for p in results]
             pool.close()
             pool.join()
@@ -433,7 +452,8 @@ def main(input_path,
          objective_id=None,
          compartment_id='MNXC3',
          fill_orphan_species=None,
-         species_group_id='central_species'):
+         species_group_id='central_species',
+         sink_species_group_id='rp_sink_species'):
     #outputTar_obj = io.BytesIO()
     if num_workers==1:
         runFBA_hdd(input_path,
@@ -450,7 +470,8 @@ def main(input_path,
                    str(pathway_id),
                    objective_id,
                    str(compartment_id),
-                   str(species_group_id))
+                   str(species_group_id),
+                   str(sink_species_group_id))
         return True
     elif num_workers>1:
         runFBA_multi(input_path,
@@ -469,7 +490,8 @@ def main(input_path,
                      objective_id,
                      str(compartment_id),
                      fill_orphan_species,
-                     str(species_group_id))
+                     str(species_group_id),
+                     str(sink_species_group_id))
         return True
     else:
         logging.error('Cannot have 0 or less workers: '+str(num_workers))
