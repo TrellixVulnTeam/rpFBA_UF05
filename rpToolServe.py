@@ -24,8 +24,8 @@ logging.basicConfig(
     datefmt='%d-%m-%Y %H:%M:%S',
 )
 
-logging.disable(logging.INFO)
-logging.disable(logging.WARNING)
+#logging.disable(logging.INFO)
+#logging.disable(logging.WARNING)
 
 ###################################################################################
 ################################## processify #####################################
@@ -206,8 +206,8 @@ def singleFBA_hdd(file_name,
     rpsbml_gem = rpSBML.rpSBML(file_name, path=gem_sbml)
     rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id)
     #TO REMOVE
-    #rpsbml_gem.modelName = 'test'
-    #rpsbml_gem.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpFBA_image/tmp_out/')
+    rpsbml_gem.modelName = 'test'
+    rpsbml_gem.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpFBA_image/tmp_out/')
     rpfba = rpFBA.rpFBA(rpsbml_gem)
     ####### fraction of reaction ######
     if sim_type=='fraction':
