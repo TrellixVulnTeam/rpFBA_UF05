@@ -15,8 +15,13 @@ import shutil
 
 sys.path.insert(0, '/home/')
 import rpTool as rpFBA
-
+import rpCache
 import rpSBML
+
+
+sys.path.insert(0, '/home/inchikeyMIRIAM')
+import rpToolServe as inchikeyMIRIAM
+
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -24,8 +29,6 @@ logging.basicConfig(
     datefmt='%d-%m-%Y %H:%M:%S',
 )
 
-#logging.disable(logging.INFO)
-#logging.disable(logging.WARNING)
 
 ###################################################################################
 ################################## processify #####################################
@@ -203,92 +206,94 @@ def singleFBA_hdd(file_name,
     logging.info('old central species: '+str(cent_spe))
     logging.info('old sink species: '+str(sink_spe))
     #rpsbml_gem = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
-    rpsbml_gem = rpSBML.rpSBML(file_name, path=gem_sbml)
-    rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id)
-    #TO REMOVE
-    rpsbml_gem.modelName = 'test'
-    rpsbml_gem.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpFBA_image/tmp_out/')
-    rpfba = rpFBA.rpFBA(rpsbml_gem)
-    ####### fraction of reaction ######
-    if sim_type=='fraction':
-        rpfba.runFractionReaction(source_reaction, source_coefficient, target_reaction, target_coefficient, fraction_of, is_max, pathway_id, objective_id)
-    ####### FBA ########
-    elif sim_type=='fba':
-        rpfba.runFBA(target_reaction, target_coefficient, is_max, pathway_id, objective_id)
-    ####### pFBA #######
-    elif sim_type=='pfba':
-        rpfba.runParsimoniousFBA(target_reaction, target_coefficient, fraction_of, is_max, pathway_id, objective_id)
-    else:
-        logging.error('Cannot recognise sim_type: '+str(sim_type))
-    '''
-    ###### multi objective #####
-    elif sim_type=='multi_fba':
-        rpfba.runMultiObjective(reactions, coefficients, is_max, pathway_id)
-    '''
-    if dont_merge:
-        logging.info('Returning model with heterologous pathway only')
-        groups = rpfba.rpsbml.model.getPlugin('groups')
-        rp_pathway = groups.getGroup(pathway_id)
-        for member in rp_pathway.getListOfMembers():
-            #### reaction annotation
-            reacFBA = rpfba.rpsbml.model.getReaction(member.getIdRef())
-            reacIN = rpsbml.model.getReaction(member.getIdRef())
-            reacIN.setAnnotation(reacFBA.getAnnotation())
-            #### species TODO: only for shadow price
-        #### add groups ####
-        source_groups = rpfba.rpsbml.model.getPlugin('groups')
-        target_groups = rpsbml.model.getPlugin('groups')
-        target_groupsID = [i.getId() for i in target_groups.getListOfGroups()]
-        for source_group in source_groups.getListOfGroups():
-            #logging.info('Replacing group id: '+str(source_group.getId()))
-            if source_group.getId()==species_group_id:
-                target_group = target_groups.getGroup(source_group.getId())
-                #TODO: #### replace the new potentially incorect central species with the normal ones #####
-                #delete all the previous members
-                logging.info('Removing central_species')
-                for i in range(target_group.getNumMembers()):
-                    logging.info('Deleting group member: '+str(target_group.getMember(0).getIdRef()))
-                    target_group.removeMember(0)
-                #add the new ones
-                for cs in cent_spe:
-                    logging.info('Creating new member: '+str(cs))
-                    newM = target_group.createMember()
-                    newM.setIdRef(cs)  
-            if source_group.getId()==sink_species_group_id:
-                target_group = target_groups.getGroup(source_group.getId())
-                logging.info('Removing sink species')
-                for i in range(target_group.getNumMembers()):
-                    logging.info('Deleting group member: '+str(target_group.getMember(0).getIdRef()))
-                    target_group.removeMember(0)
-                #add the new ones
-                for cs in sink_spe:
-                    logging.info('Creating new member: '+str(cs))
-                    newM = target_group.createMember()
-                    newM.setIdRef(cs)  
-            elif source_group.getId() in target_groupsID:
-                target_group = target_groups.getGroup(source_group.getId())
-                target_group.setAnnotation(source_group.getAnnotation())
-        #### add objectives ####
-        source_fbc = rpfba.rpsbml.model.getPlugin('fbc')
-        target_fbc = rpsbml.model.getPlugin('fbc')
-        target_objID = [i.getId() for i in target_fbc.getListOfObjectives()]
-        for source_obj in source_fbc.getListOfObjectives():
-            source_obj_id = source_obj.getId()
-            if source_obj.getId() in target_objID:
-                target_obj = target_fbc.getObjective(source_obj.getId())
-                target_obj.setAnnotation(source_obj.getAnnotation())
-                for target_fluxObj in target_obj.getListOfFluxObjectives():
-                    for source_fluxObj in source_obj.getListOfFluxObjectives():
-                        if target_fluxObj.getReaction()==source_fluxObj.getReaction():
-                            target_fluxObj.setAnnotation(source_fluxObj.getAnnotation())
-            else:
-                target_fbc.addObjective(source_obj)
-        #rpsbml.createMultiFluxObj('obj_RP1_sink', ['RP1_sink'], [1])
-        target_fbc.setActiveObjectiveId(source_obj_id) #tmp random assigenement of objective
-        rpsbml.writeSBML(tmpOutputFolder)
-    else:
-        logging.info('Returning the full model')
-        rpfba.rpsbml.writeSBML(tmpOutputFolder)
+    with tempfile.TemporaryDirectory() as tmpInputFolder:
+        inchikeyMIRIAM.main(gem_sbml, os.path.join(tmpInputFolder, 'tmp.sbml')) 
+        rpsbml_gem = rpSBML.rpSBML(file_name, path=os.path.join(tmpInputFolder, 'tmp.sbml'))
+        rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id)
+        #TO TEST MERGE: TO REMOVE
+        #rpsbml_gem.modelName = 'test'
+        #rpsbml_gem.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpFBA_image/tmp_out/')
+        rpfba = rpFBA.rpFBA(rpsbml_gem)
+        ####### fraction of reaction ######
+        if sim_type=='fraction':
+            rpfba.runFractionReaction(source_reaction, source_coefficient, target_reaction, target_coefficient, fraction_of, is_max, pathway_id, objective_id)
+        ####### FBA ########
+        elif sim_type=='fba':
+            rpfba.runFBA(target_reaction, target_coefficient, is_max, pathway_id, objective_id)
+        ####### pFBA #######
+        elif sim_type=='pfba':
+            rpfba.runParsimoniousFBA(target_reaction, target_coefficient, fraction_of, is_max, pathway_id, objective_id)
+        else:
+            logging.error('Cannot recognise sim_type: '+str(sim_type))
+        '''
+        ###### multi objective #####
+        elif sim_type=='multi_fba':
+            rpfba.runMultiObjective(reactions, coefficients, is_max, pathway_id)
+        '''
+        if dont_merge:
+            logging.info('Returning model with heterologous pathway only')
+            groups = rpfba.rpsbml.model.getPlugin('groups')
+            rp_pathway = groups.getGroup(pathway_id)
+            for member in rp_pathway.getListOfMembers():
+                #### reaction annotation
+                reacFBA = rpfba.rpsbml.model.getReaction(member.getIdRef())
+                reacIN = rpsbml.model.getReaction(member.getIdRef())
+                reacIN.setAnnotation(reacFBA.getAnnotation())
+                #### species TODO: only for shadow price
+            #### add groups ####
+            source_groups = rpfba.rpsbml.model.getPlugin('groups')
+            target_groups = rpsbml.model.getPlugin('groups')
+            target_groupsID = [i.getId() for i in target_groups.getListOfGroups()]
+            for source_group in source_groups.getListOfGroups():
+                #logging.info('Replacing group id: '+str(source_group.getId()))
+                if source_group.getId()==species_group_id:
+                    target_group = target_groups.getGroup(source_group.getId())
+                    #TODO: #### replace the new potentially incorect central species with the normal ones #####
+                    #delete all the previous members
+                    logging.info('Removing central_species')
+                    for i in range(target_group.getNumMembers()):
+                        logging.info('Deleting group member: '+str(target_group.getMember(0).getIdRef()))
+                        target_group.removeMember(0)
+                    #add the new ones
+                    for cs in cent_spe:
+                        logging.info('Creating new member: '+str(cs))
+                        newM = target_group.createMember()
+                        newM.setIdRef(cs)  
+                if source_group.getId()==sink_species_group_id:
+                    target_group = target_groups.getGroup(source_group.getId())
+                    logging.info('Removing sink species')
+                    for i in range(target_group.getNumMembers()):
+                        logging.info('Deleting group member: '+str(target_group.getMember(0).getIdRef()))
+                        target_group.removeMember(0)
+                    #add the new ones
+                    for cs in sink_spe:
+                        logging.info('Creating new member: '+str(cs))
+                        newM = target_group.createMember()
+                        newM.setIdRef(cs)  
+                elif source_group.getId() in target_groupsID:
+                    target_group = target_groups.getGroup(source_group.getId())
+                    target_group.setAnnotation(source_group.getAnnotation())
+            #### add objectives ####
+            source_fbc = rpfba.rpsbml.model.getPlugin('fbc')
+            target_fbc = rpsbml.model.getPlugin('fbc')
+            target_objID = [i.getId() for i in target_fbc.getListOfObjectives()]
+            for source_obj in source_fbc.getListOfObjectives():
+                source_obj_id = source_obj.getId()
+                if source_obj.getId() in target_objID:
+                    target_obj = target_fbc.getObjective(source_obj.getId())
+                    target_obj.setAnnotation(source_obj.getAnnotation())
+                    for target_fluxObj in target_obj.getListOfFluxObjectives():
+                        for source_fluxObj in source_obj.getListOfFluxObjectives():
+                            if target_fluxObj.getReaction()==source_fluxObj.getReaction():
+                                target_fluxObj.setAnnotation(source_fluxObj.getAnnotation())
+                else:
+                    target_fbc.addObjective(source_obj)
+            #rpsbml.createMultiFluxObj('obj_RP1_sink', ['RP1_sink'], [1])
+            target_fbc.setActiveObjectiveId(source_obj_id) #tmp random assigenement of objective
+            rpsbml.writeSBML(tmpOutputFolder)
+        else:
+            logging.info('Returning the full model')
+            rpfba.rpsbml.writeSBML(tmpOutputFolder)
 
 
 ##
