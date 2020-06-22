@@ -31,12 +31,12 @@ def main(inputfile,
          target_reaction='RP1_sink',
          source_coefficient=1.0,
          target_coefficient=1.0,
-		 num_workers=10,
+		 num_workers=1,
          is_max=True,
          fraction_of=0.75,
          dont_merge=True):
     docker_client = docker.from_env()
-    image_str = 'brsynth/rpfba-standalone:dev'
+    image_str = 'brsynth/rpfba-standalone:inchikey'
     try:
         image = docker_client.images.get(image_str)
     except docker.errors.ImageNotFound:
