@@ -27,6 +27,8 @@ if __name__ == "__main__":
     parser.add_argument('-gem_sbml', type=str)
     parser.add_argument('-output', type=str)
     parser.add_argument('-pathway_id', type=str, default='rp_pathway')
+    parser.add_argument('-sink_species_group_id', type=str, default='rp_sink_species')
+    parser.add_argument('-species_group_id', type=str, default='central_species')
     parser.add_argument('-objective_id', type=str, default='None')
     parser.add_argument('-compartment_id', type=str, default='MNXC3')
     parser.add_argument('-sim_type', type=str, default='fraction')
@@ -39,8 +41,12 @@ if __name__ == "__main__":
     parser.add_argument('-fraction_of', type=float, default=0.75)
     parser.add_argument('-dont_merge', type=str, default='True')
     params = parser.parse_args()
+    if params.num_workers>=20 or params.num_workers<=0:
+        logging.error('Cannot have more than 20 and 0 or less workers: '+str(params.num_workers))
+        exit(1)
     if params.fraction_of<=0.0:
         logging.error('Cannot have -fraction_of less or equal than 0: '+str(params.fraction_of))
+        exit(1)
     if params.is_max==True or params.is_max=='True' or params.is_max=='true':
         is_max = True
     elif params.is_max==False or params.is_max=='False' or params.is_max=='false':
@@ -56,10 +62,10 @@ if __name__ == "__main__":
         logging.error('Cannot interpret '+str(params.dont_merge))
         exit(1)
     if params.objective_id=='None':
-        objective_id = None
+        objective_id = 'obj_'+params.sim_type
     else:
         objective_id = params.objective_id
-    if params.input_format=='tar': 
+    if params.input_format=='tar':
         rpToolServe.main(params.input,
                          params.gem_sbml,
                          params.output,
@@ -74,13 +80,16 @@ if __name__ == "__main__":
                          params.num_workers,
                          params.pathway_id,
                          objective_id,
-                         params.compartment_id)
-    elif params.input_format=='sbml': 
+                         params.compartment_id,
+                         None, #this is fillorphanspecies
+                         params.species_group_id,
+                         params.sink_species_group_id)
+    elif params.input_format=='sbml':
         #make the tar.xz 
         with tempfile.TemporaryDirectory() as tmpOutputFolder:
-            input_tar = tmpOutputFolder+'/tmp_input.tar.xz'
-            output_tar = tmpOutputFolder+'/tmp_output.tar.xz'
-            with tarfile.open(input_tar, mode='w:xz') as tf:
+            input_tar = tmpOutputFolder+'/tmp_input.tar'
+            output_tar = tmpOutputFolder+'/tmp_output.tar'
+            with tarfile.open(input_tar, mode='w:gz') as tf:
                 #tf.add(params.input)
                 info = tarfile.TarInfo('single.rpsbml.xml') #need to change the name since galaxy creates .dat files
                 info.size = os.path.getsize(params.input)
@@ -99,10 +108,13 @@ if __name__ == "__main__":
                              params.num_workers,
                              params.pathway_id,
                              objective_id,
-                             params.compartment_id)
-            with tarfile.open(output_tar) as outTar:
+                             params.compartment_id,
+                             None, #this is filloorphanspecies
+                             params.species_group_id,
+                             params.sink_species_group_id)
+            with tarfile.open(output_tar, mode='r') as outTar:
                 outTar.extractall(tmpOutputFolder)
-            out_file = glob.glob(tmpOutputFolder+'/*.rpsbml.xml')
+            out_file = glob.glob(tmpOutputFolder+'/*.sbml.xml')
             if len(out_file)>1:
                 logging.warning('There are more than one output file...')
             shutil.copy(out_file[0], params.output)

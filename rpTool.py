@@ -7,12 +7,6 @@ import glob
 import logging
 
 
-logging.basicConfig(
-    level=logging.ERROR,
-    format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
-    datefmt='%d-%m-%Y %H:%M:%S',
-)
-
 ## Class to simulate an rpsbml object using different FBA types and objective functions
 #
 # At this point we want to have the BIOMASS, target and shared objective
@@ -62,6 +56,8 @@ class rpFBA:
         try:
             with tempfile.TemporaryDirectory() as tmpOutputFolder:
                 self.rpsbml.writeSBML(tmpOutputFolder)
+                logging.info(glob.glob(tmpOutputFolder+'/*'))
+                logging.info(cobra.io.validate_sbml_model(glob.glob(tmpOutputFolder+'/*')[0]))
                 self.cobraModel = cobra.io.read_sbml_model(glob.glob(tmpOutputFolder+'/*')[0], use_fbc_package=True)
             #self.cobraModel = cobra.io.read_sbml_model(self.rpsbml.document.toXMLNode().toXMLString(), use_fbc_package=True)
             #use CPLEX
@@ -101,16 +97,15 @@ class rpFBA:
         self._checklibSBML(obj, 'Getting objective '+str(objective_id))
         self.rpsbml.addUpdateBRSynth(obj, 'flux_value', str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
         self.logger.info('Set the objective '+str(objective_id)+' a flux_value of '+str(cobra_results.objective_value))
-        self.logger.info(obj.getListOfFluxObjectives())
         for flux_obj in obj.getListOfFluxObjectives():
             #sometimes flux cannot be returned
             if cobra_results.fluxes.get(flux_obj.getReaction())==None:
                 self.logger.warning('Cobra BUG: Cannot retreive '+str(flux_obj.getReaction())+' flux from cobrapy... setting to 0.0')
                 self.rpsbml.addUpdateBRSynth(flux_obj, 'flux_value', str(0.0), 'mmol_per_gDW_per_hr', False)
-                self.logger.info('Set the objective '+str(flux_obj.getId())+' a flux_value of '+str(0.0))
+                self.logger.info('Set the reaction '+str(flux_obj.getReaction())+' a flux_value of '+str(0.0))
             else:
                 self.rpsbml.addUpdateBRSynth(flux_obj, 'flux_value', str(cobra_results.fluxes.get(flux_obj.getReaction())), 'mmol_per_gDW_per_hr', False)
-                self.logger.info('Set the objective '+str(flux_obj.getId())+' a flux_value of '+str(cobra_results.fluxes.get(flux_obj.getReaction())))
+                self.logger.info('Set the reaction '+str(flux_obj.getReaction())+' a flux_value of '+str(cobra_results.fluxes.get(flux_obj.getReaction())))
         #write all the results to the reactions of pathway_id
         for member in rp_pathway.getListOfMembers():
             reac = self.rpsbml.model.getReaction(member.getIdRef())
@@ -202,9 +197,12 @@ class rpFBA:
         source_obj_id = self.rpsbml.findCreateObjective([source_reaction], [source_coefficient], is_max)
         #TODO: use the rpSBML BRSynth annotation parser
         source_flux = None
-        fbc_obj = fbc_plugin.getObjective(source_obj_id)
-        fbc_obj_annot = fbc_obj.getAnnotation()
         try:
+            fbc_obj = fbc_plugin.getObjective(source_obj_id)
+            #TODO: if this is None need to set it up 
+            fbc_obj_annot = fbc_obj.getAnnotation()
+            if not fbc_obj_annot:
+                raise ValueError
             source_flux = float(fbc_obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
             self.logger.info('Already calculated flux for '+str(source_obj_id))
         except (AttributeError, ValueError) as e:
@@ -232,6 +230,8 @@ class rpFBA:
         #self.logger.info('findCreateObjective() for '+str(objective_id))
         objective_id = self.rpsbml.findCreateObjective([target_reaction], [target_coefficient], is_max, objective_id)
         self.logger.info('Optimising the objective: '+str(objective_id))
+        self.logger.info('Setting upper bound: '+str(source_flux*fraction_of_source))
+        self.logger.info('Setting loer bound: '+str(source_flux*fraction_of_source))
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               source_flux*fraction_of_source,
                                                                               source_flux*fraction_of_source)
@@ -242,6 +242,9 @@ class rpFBA:
             return False
         cobra_results = self.cobraModel.optimize()
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
+        ##### print the biomass results ######
+        self.logger.info('Biomass: '+str(cobra_results.fluxes.biomass))
+        self.logger.info('Target: '+str(cobra_results.fluxes.RP1_sink))
         #reset the bounds to the original values for the target
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               old_upper_bound,
