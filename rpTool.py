@@ -14,7 +14,7 @@ import logging
 class rpFBA:
     def __init__(self, rpsbml):
         self.logger = logging.getLogger(__name__)
-        self.logger.info('Started instance of rpFBA')
+        self.logger.debug('Started instance of rpFBA')
         self.rpsbml = rpsbml
         #TODO enable FBC if not done so
         self.cobraModel = None
@@ -78,7 +78,7 @@ class rpFBA:
     # #TODO: move this to rpSBML
     #
     def writeAnalysisResults(self, objective_id, cobra_results, pathway_id='rp_pathway'):
-        self.logger.info('----- Setting the results for '+str(objective_id)+ ' -----')
+        self.logger.debug('----- Setting the results for '+str(objective_id)+ ' -----')
         groups = self.rpsbml.model.getPlugin('groups')
         self._checklibSBML(groups, 'Getting groups plugin')
         rp_pathway = groups.getGroup(pathway_id)
@@ -88,24 +88,25 @@ class rpFBA:
             rp_pathway = groups.getGroup(pathway_id)
         self._checklibSBML(rp_pathway, 'Getting RP pathway')
         #write the results to the rp_pathway
+        self.rpsbml.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpcofactors_138/tmp/')
+        self.logger.debug('Set '+str(pathway_id)+' with '+str('fba_'+str(objective_id))+' to '+str(cobra_results.objective_value))
         self.rpsbml.addUpdateBRSynth(rp_pathway, 'fba_'+str(objective_id), str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
-        self.logger.info('Set '+str(pathway_id)+' with '+str('fba_'+str(objective_id))+' to '+str(cobra_results.objective_value))
         #get the objective
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC plugin')
         obj = fbc_plugin.getObjective(objective_id)
         self._checklibSBML(obj, 'Getting objective '+str(objective_id))
         self.rpsbml.addUpdateBRSynth(obj, 'flux_value', str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
-        self.logger.info('Set the objective '+str(objective_id)+' a flux_value of '+str(cobra_results.objective_value))
+        self.logger.debug('Set the objective '+str(objective_id)+' a flux_value of '+str(cobra_results.objective_value))
         for flux_obj in obj.getListOfFluxObjectives():
             #sometimes flux cannot be returned
             if cobra_results.fluxes.get(flux_obj.getReaction())==None:
                 self.logger.warning('Cobra BUG: Cannot retreive '+str(flux_obj.getReaction())+' flux from cobrapy... setting to 0.0')
                 self.rpsbml.addUpdateBRSynth(flux_obj, 'flux_value', str(0.0), 'mmol_per_gDW_per_hr', False)
-                self.logger.info('Set the reaction '+str(flux_obj.getReaction())+' a flux_value of '+str(0.0))
+                self.logger.debug('Set the reaction '+str(flux_obj.getReaction())+' a flux_value of '+str(0.0))
             else:
                 self.rpsbml.addUpdateBRSynth(flux_obj, 'flux_value', str(cobra_results.fluxes.get(flux_obj.getReaction())), 'mmol_per_gDW_per_hr', False)
-                self.logger.info('Set the reaction '+str(flux_obj.getReaction())+' a flux_value of '+str(cobra_results.fluxes.get(flux_obj.getReaction())))
+                self.logger.debug('Set the reaction '+str(flux_obj.getReaction())+' a flux_value of '+str(cobra_results.fluxes.get(flux_obj.getReaction())))
         #write all the results to the reactions of pathway_id
         for member in rp_pathway.getListOfMembers():
             reac = self.rpsbml.model.getReaction(member.getIdRef())
@@ -114,7 +115,7 @@ class rpFBA:
                 #return False
                 continue
             self.rpsbml.addUpdateBRSynth(reac, 'fba_'+str(objective_id), str(cobra_results.fluxes.get(reac.getId())), 'mmol_per_gDW_per_hr', False)
-            self.logger.info('Set the reaction '+str(member.getIdRef())+' a '+str('fba_'+str(objective_id))+' of '+str(cobra_results.fluxes.get(reac.getId())))
+            self.logger.debug('Set the reaction '+str(member.getIdRef())+' a '+str('fba_'+str(objective_id))+' of '+str(cobra_results.fluxes.get(reac.getId())))
 
 
     ##################################################################
@@ -193,7 +194,7 @@ class rpFBA:
         #retreive the biomass objective and flux results and set as maxima
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
-        self.logger.info('findCreateObjective: '+str(source_reaction))
+        self.logger.debug('findCreateObjective: '+str(source_reaction))
         source_obj_id = self.rpsbml.findCreateObjective([source_reaction], [source_coefficient], is_max)
         #TODO: use the rpSBML BRSynth annotation parser
         source_flux = None
@@ -204,9 +205,9 @@ class rpFBA:
             if not fbc_obj_annot:
                 raise ValueError
             source_flux = float(fbc_obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
-            self.logger.info('Already calculated flux for '+str(source_obj_id))
+            self.logger.debug('Already calculated flux for '+str(source_obj_id))
         except (AttributeError, ValueError) as e:
-            self.logger.info('Performing FBA to calculate the source reaction')
+            self.logger.debug('Performing FBA to calculate the source reaction')
             ### FBA ###
             #self.runFBA(source_reaction, source_coefficient, is_max, pathway_id)
             self._checklibSBML(fbc_plugin.setActiveObjectiveId(source_obj_id),
@@ -224,14 +225,14 @@ class rpFBA:
                 return 0.0
             source_flux = float(fbc_obj_annot.getChild('RDF').getChild('BRSynth').getChild('brsynth').getChild(0).getAttrValue('value'))
         #TODO: add another to check if the objective id exists
-        self.logger.info('FBA source flux ('+str(source_reaction)+') is: '+str(source_flux))
+        self.logger.debug('FBA source flux ('+str(source_reaction)+') is: '+str(source_flux))
         if not objective_id:
             objective_id = 'obj_'+str(target_reaction)+'__restricted_'+str(source_reaction)
-        #self.logger.info('findCreateObjective() for '+str(objective_id))
+        #self.logger.debug('findCreateObjective() for '+str(objective_id))
         objective_id = self.rpsbml.findCreateObjective([target_reaction], [target_coefficient], is_max, objective_id)
-        self.logger.info('Optimising the objective: '+str(objective_id))
-        self.logger.info('Setting upper bound: '+str(source_flux*fraction_of_source))
-        self.logger.info('Setting loer bound: '+str(source_flux*fraction_of_source))
+        self.logger.debug('Optimising the objective: '+str(objective_id))
+        self.logger.debug('Setting upper bound: '+str(source_flux*fraction_of_source))
+        self.logger.debug('Setting loer bound: '+str(source_flux*fraction_of_source))
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               source_flux*fraction_of_source,
                                                                               source_flux*fraction_of_source)
@@ -243,13 +244,13 @@ class rpFBA:
         cobra_results = self.cobraModel.optimize()
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
         ##### print the biomass results ######
-        self.logger.info('Biomass: '+str(cobra_results.fluxes.biomass))
-        self.logger.info('Target: '+str(cobra_results.fluxes.RP1_sink))
+        self.logger.debug('Biomass: '+str(cobra_results.fluxes.biomass))
+        self.logger.debug('Target: '+str(cobra_results.fluxes.RP1_sink))
         #reset the bounds to the original values for the target
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               old_upper_bound,
                                                                               old_lower_bound)
-        self.logger.info('The objective '+str(objective_id)+' results '+str(cobra_results.objective_value))
+        self.logger.debug('The objective '+str(objective_id)+' results '+str(cobra_results.objective_value))
         return cobra_results.objective_value
 
 

@@ -19,8 +19,8 @@ import rpTool as rpFBA
 import rpSBML
 
 logging.basicConfig(
-    #level=logging.DEBUG,
-    level=logging.WARNING,
+    level=logging.DEBUG,
+    #level=logging.WARNING,
     format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
     datefmt='%d-%m-%Y %H:%M:%S',
 )
@@ -191,21 +191,26 @@ def singleFBA_hdd(file_name,
                   fill_orphan_species=False,
                   species_group_id='central_species',
                   sink_species_group_id='rp_sink_species'):
+    logging.debug('--------- '+str(file_name)+' ------------')
     rpsbml = rpSBML.rpSBML(file_name, path=sbml_path)
     #Save the central species
     groups = rpsbml.model.getPlugin('groups')
     central = groups.getGroup(species_group_id)
     sink_group = groups.getGroup(sink_species_group_id)
+    rp_group = groups.getGroup(pathway_id)
     cent_spe = [str(i.getIdRef()) for i in central.getListOfMembers()]
     sink_spe = [str(i.getIdRef()) for i in sink_group.getListOfMembers()]
-    logging.info('old central species: '+str(cent_spe))
-    logging.info('old sink species: '+str(sink_spe))
+    rp_reac = [str(i.getIdRef()) for i in rp_group.getListOfMembers()]
+    logging.debug('old central species: '+str(cent_spe))
+    logging.debug('old sink species: '+str(sink_spe))
+    logging.debug('old rp reactions: '+str(rp_reac))
     #rpsbml_gem = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
     rpsbml_gem = rpSBML.rpSBML(file_name, path=gem_sbml)
-    rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id)
+    species_convert, reactions_convert = rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id, pathway_id)
+    rev_reactions_convert = {v: k for k, v in reactions_convert.items()}
     #TO REMOVE
-    rpsbml_gem.modelName = 'test'
-    rpsbml_gem.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpFBA_image/tmp_out/')
+    #rpsbml_gem.modelName = 'test'
+    #rpsbml_gem.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpFBA_image/tmp_out/')
     rpfba = rpFBA.rpFBA(rpsbml_gem)
     ####### fraction of reaction ######
     if sim_type=='fraction':
@@ -224,13 +229,21 @@ def singleFBA_hdd(file_name,
         rpfba.runMultiObjective(reactions, coefficients, is_max, pathway_id)
     '''
     if dont_merge:
-        logging.info('Returning model with heterologous pathway only')
+        logging.debug('Returning model with heterologous pathway only')
         groups = rpfba.rpsbml.model.getPlugin('groups')
         rp_pathway = groups.getGroup(pathway_id)
+        logging.debug('---- Reactions ----')
         for member in rp_pathway.getListOfMembers():
             #### reaction annotation
+            logging.debug(member.getIdRef())
             reacFBA = rpfba.rpsbml.model.getReaction(member.getIdRef())
-            reacIN = rpsbml.model.getReaction(member.getIdRef())
+            logging.debug(reacFBA)
+            try:
+                reacIN = rpsbml.model.getReaction(rev_reactions_convert[member.getIdRef()])
+            except KeyError:
+                reacIN = rpsbml.model.getReaction(member.getIdRef())
+            logging.debug(reacIN)
+            logging.debug(reacFBA.getAnnotation())
             reacIN.setAnnotation(reacFBA.getAnnotation())
             #### species TODO: only for shadow price
         #### add groups ####
@@ -238,29 +251,40 @@ def singleFBA_hdd(file_name,
         target_groups = rpsbml.model.getPlugin('groups')
         target_groupsID = [i.getId() for i in target_groups.getListOfGroups()]
         for source_group in source_groups.getListOfGroups():
-            #logging.info('Replacing group id: '+str(source_group.getId()))
+            #logging.debug('Replacing group id: '+str(source_group.getId()))
             if source_group.getId()==species_group_id:
                 target_group = target_groups.getGroup(source_group.getId())
                 #TODO: #### replace the new potentially incorect central species with the normal ones #####
                 #delete all the previous members
-                logging.info('Removing central_species')
+                logging.debug('Removing central_species')
                 for i in range(target_group.getNumMembers()):
-                    logging.info('Deleting group member: '+str(target_group.getMember(0).getIdRef()))
+                    logging.debug('Deleting group member: '+str(target_group.getMember(0).getIdRef()))
                     target_group.removeMember(0)
                 #add the new ones
                 for cs in cent_spe:
-                    logging.info('Creating new member: '+str(cs))
+                    logging.debug('Creating new member: '+str(cs))
                     newM = target_group.createMember()
                     newM.setIdRef(cs)  
-            if source_group.getId()==sink_species_group_id:
+            elif source_group.getId()==sink_species_group_id:
                 target_group = target_groups.getGroup(source_group.getId())
-                logging.info('Removing sink species')
+                logging.debug('Removing sink species')
                 for i in range(target_group.getNumMembers()):
-                    logging.info('Deleting group member: '+str(target_group.getMember(0).getIdRef()))
+                    logging.debug('Deleting group member: '+str(target_group.getMember(0).getIdRef()))
                     target_group.removeMember(0)
                 #add the new ones
                 for cs in sink_spe:
-                    logging.info('Creating new member: '+str(cs))
+                    logging.debug('Creating new member: '+str(cs))
+                    newM = target_group.createMember()
+                    newM.setIdRef(cs)  
+            elif source_group.getId()==pathway_id:
+                target_group = target_groups.getGroup(source_group.getId())
+                logging.debug('Removing rp ractions')
+                for i in range(target_group.getNumMembers()):
+                    logging.debug('Deleting group member: '+str(target_group.getMember(0).getIdRef()))
+                    target_group.removeMember(0)
+                #add the new ones
+                for cs in rp_reac:
+                    logging.debug('Creating new member: '+str(cs))
                     newM = target_group.createMember()
                     newM.setIdRef(cs)  
             elif source_group.getId() in target_groupsID:
@@ -285,7 +309,7 @@ def singleFBA_hdd(file_name,
         target_fbc.setActiveObjectiveId(source_obj_id) #tmp random assigenement of objective
         rpsbml.writeSBML(tmpOutputFolder)
     else:
-        logging.info('Returning the full model')
+        logging.debug('Returning the full model')
         rpfba.rpsbml.writeSBML(tmpOutputFolder)
 
 
@@ -320,10 +344,10 @@ def runFBA_hdd(inputTar,
             #open the model as a string
             for sbml_path in glob.glob(tmpInputFolder+'/*'):
                 fileName = sbml_path.split('/')[-1].replace('.sbml', '').replace('.xml', '').replace('.rpsbml', '')
-                logging.info('############## '+str(fileName)+' ################')
+                logging.debug('############## '+str(fileName)+' ################')
                 try:
-                    #logging.info('Running single FBA with the following parameters:')
-                    #logging.info('\t')
+                    #logging.debug('Running single FBA with the following parameters:')
+                    #logging.debug('\t')
                     singleFBA_hdd(fileName,
                                   sbml_path,
                                   gem_sbml,
