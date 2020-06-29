@@ -88,7 +88,6 @@ class rpFBA:
             rp_pathway = groups.getGroup(pathway_id)
         self._checklibSBML(rp_pathway, 'Getting RP pathway')
         #write the results to the rp_pathway
-        self.rpsbml.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpcofactors_138/tmp/')
         self.logger.debug('Set '+str(pathway_id)+' with '+str('fba_'+str(objective_id))+' to '+str(cobra_results.objective_value))
         self.rpsbml.addUpdateBRSynth(rp_pathway, 'fba_'+str(objective_id), str(cobra_results.objective_value), 'mmol_per_gDW_per_hr', False)
         #get the objective
