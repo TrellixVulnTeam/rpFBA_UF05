@@ -276,6 +276,10 @@ def singleFBA_hdd(file_name,
                     logging.debug('Creating new member: '+str(cs))
                     newM = target_group.createMember()
                     newM.setIdRef(cs)  
+            elif source_group.getId() in target_groupsID:
+                target_group = target_groups.getGroup(source_group.getId())
+                target_group.setAnnotation(source_group.getAnnotation())
+            '''
             elif source_group.getId()==pathway_id:
                 target_group = target_groups.getGroup(source_group.getId())
                 logging.debug('Removing rp ractions')
@@ -287,9 +291,7 @@ def singleFBA_hdd(file_name,
                     logging.debug('Creating new member: '+str(cs))
                     newM = target_group.createMember()
                     newM.setIdRef(cs)  
-            elif source_group.getId() in target_groupsID:
-                target_group = target_groups.getGroup(source_group.getId())
-                target_group.setAnnotation(source_group.getAnnotation())
+            '''
         #### add objectives ####
         source_fbc = rpfba.rpsbml.model.getPlugin('fbc')
         target_fbc = rpsbml.model.getPlugin('fbc')
