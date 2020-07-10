@@ -13,10 +13,15 @@ import logging
 import tempfile
 import shutil
 
-sys.path.insert(0, '/home/')
-import rpTool as rpFBA
 
+sys.path.insert(0, '/home/')
+import inchikeyMIRIAM
+import rpTool as rpFBA
+import rpCache
 import rpSBML
+
+
+
 
 logging.basicConfig(
     #level=logging.DEBUG,
@@ -207,9 +212,8 @@ def singleFBA_hdd(file_name,
     logging.debug('old rp reactions: '+str(rp_reac))
     #rpsbml_gem = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
     rpsbml_gem = rpSBML.rpSBML(file_name, path=gem_sbml)
-    species_convert, reactions_convert = rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id, pathway_id)
-    rev_reactions_convert = {v: k for k, v in reactions_convert.items()}
-    #TO REMOVE
+    rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id)
+    #TO TEST MERGE: TO REMOVE
     #rpsbml_gem.modelName = 'test'
     #rpsbml_gem.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpFBA_image/tmp_out/')
     rpfba = rpFBA.rpFBA(rpsbml_gem)
@@ -477,46 +481,49 @@ def main(input_path,
          fill_orphan_species=None,
          species_group_id='central_species',
          sink_species_group_id='rp_sink_species'):
-    #outputTar_obj = io.BytesIO()
-    if num_workers==1:
-        runFBA_hdd(input_path,
-                   gem_sbml,
-                   output_path,
-                   str(sim_type),
-                   str(source_reaction),
-                   str(target_reaction),
-                   float(source_coefficient),
-                   float(target_coefficient),
-                   is_max,
-                   float(fraction_of),
-                   bool(dont_merge),
-                   str(pathway_id),
-                   objective_id,
-                   str(compartment_id),
-                   fill_orphan_species,
-                   str(species_group_id),
-                   str(sink_species_group_id))
-        return True
-    elif num_workers>1:
-        runFBA_multi(input_path,
-                     gem_sbml,
-                     output_path,
-                     str(sim_type),
-                     str(source_reaction),
-                     str(target_reaction),
-                     float(source_coefficient),
-                     float(target_coefficient),
-                     is_max,
-                     float(fraction_of),
-                     bool(dont_merge),
-                     int(num_workers),
-                     str(pathway_id),
-                     objective_id,
-                     str(compartment_id),
-                     fill_orphan_species,
-                     str(species_group_id),
-                     str(sink_species_group_id))
-        return True
-    else:
-        logging.error('Cannot have 0 or less workers: '+str(num_workers))
-        return False
+    with tempfile.TemporaryDirectory() as tmpInputFolder:
+        inchikey_enriched_gem_sbml = os.path.join(tmpInputFolder, 'tmp.sbml')
+        inchikeyMIRIAM.main(gem_sbml, inchikey_enriched_gem_sbml) 
+        #outputTar_obj = io.BytesIO()
+        if num_workers==1:
+            runFBA_hdd(input_path,
+                       inchikey_enriched_gem_sbml,
+                       output_path,
+                       str(sim_type),
+                       str(source_reaction),
+                       str(target_reaction),
+                       float(source_coefficient),
+                       float(target_coefficient),
+                       is_max,
+                       float(fraction_of),
+                       bool(dont_merge),
+                       str(pathway_id),
+                       objective_id,
+                       str(compartment_id),
+                       fill_orphan_species,
+                       str(species_group_id),
+                       str(sink_species_group_id))
+            return True
+        elif num_workers>1:
+            runFBA_multi(input_path,
+                         inchikey_enriched_gem_sbml,
+                         output_path,
+                         str(sim_type),
+                         str(source_reaction),
+                         str(target_reaction),
+                         float(source_coefficient),
+                         float(target_coefficient),
+                         is_max,
+                         float(fraction_of),
+                         bool(dont_merge),
+                         int(num_workers),
+                         str(pathway_id),
+                         objective_id,
+                         str(compartment_id),
+                         fill_orphan_species,
+                         str(species_group_id),
+                         str(sink_species_group_id))
+            return True
+        else:
+            logging.error('Cannot have 0 or less workers: '+str(num_workers))
+            return False
