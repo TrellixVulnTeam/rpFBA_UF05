@@ -19,6 +19,7 @@ import inchikeyMIRIAM
 import rpTool as rpFBA
 import rpCache
 import rpSBML
+import rpMerge
 
 
 
@@ -212,7 +213,9 @@ def singleFBA_hdd(file_name,
     logging.debug('old rp reactions: '+str(rp_reac))
     #rpsbml_gem = rpSBML.rpSBML(file_name, libsbml.readSBMLFromString(gem_sbml))
     rpsbml_gem = rpSBML.rpSBML(file_name, path=gem_sbml)
-    rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id)
+    #rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id)
+    rpmerge = rpMerge.rpMerge()
+    rpmerge.mergeModels(rpsbml, rpsbml_gem)
     #TO TEST MERGE: TO REMOVE
     #rpsbml_gem.modelName = 'test'
     #rpsbml_gem.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpFBA_image/tmp_out/')

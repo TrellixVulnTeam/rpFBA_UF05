@@ -1,4 +1,4 @@
-FROM brsynth/rpbase
+FROM brsynth/rpbase:dev
 
 RUN pip install --no-cache-dir cobra==0.16
 
