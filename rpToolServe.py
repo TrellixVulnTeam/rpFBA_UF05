@@ -17,7 +17,6 @@ import shutil
 sys.path.insert(0, '/home/')
 import inchikeyMIRIAM
 import rpTool as rpFBA
-import rpCache
 import rpSBML
 import rpMerge
 

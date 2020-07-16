@@ -1,7 +1,7 @@
 <tool id="rpFBA" name="FBA" version="0.1">
 	<description>Perform FBA for the RetroPath2.0 heterologous pathways</description>
   <requirements>
-    <container type="docker">brsynth/rpfba-standalone</container>
+    <container type="docker">brsynth/rpfba-standalone:dev</container>
   </requirements>
   <stdio>
     <regex match="WARNING" level="warning" />
@@ -56,8 +56,8 @@
     </conditional>
     <conditional name="format_type">
       <param name="input_format" type="select" label="Input/output format">
-        <option value="tar" type="text">TAR</option>
-        <option value="sbml" type="text" selected="True">SBML</option>
+        <option value="tar" type="text" selected="True">TAR</option>
+        <option value="sbml" type="text" >SBML</option>
       </param>
       <when value="tar">
         <param name="input" type="data" format="tar" label="Input file" />
@@ -97,7 +97,7 @@ For the first two, the user must specify the name(s) of reaction(s) that the mod
 Using the Advanced Options, the user can specify the name of the heterologous pathway as created by "Pathways to SBML" and the compartment ID of the heterologous pathway. The user may obtain a merged version of the resulting model, or the heterologous pathway only using the "Don't output the merged model" boolean parameter. Using the "Maximize the Objective?", the user may choose to maximize or minimize the objective (biomass production in this case) in the model.
 
 
-.. image:: https://raw.githubusercontent.com/Galaxy-SynBioCAD/rpFBA/standalone-dev/code/img/rpFBA.png
+.. image:: https://raw.githubusercontent.com/Galaxy-SynBioCAD/rpFBA/standalone/galaxy/img/rpFBA.png
 	:width: 60 %
 	:align: center
 
