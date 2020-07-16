@@ -214,7 +214,9 @@ def singleFBA_hdd(file_name,
     rpsbml_gem = rpSBML.rpSBML(file_name, path=gem_sbml)
     #rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id)
     rpmerge = rpMerge.rpMerge()
-    rpmerge.mergeModels(rpsbml, rpsbml_gem)
+    species_source_target, reac_replace = rpmerge.mergeModels(rpsbml, rpsbml_gem)
+    logging.debug('species_source_target: '+str(species_source_target))
+    logging.debug('reac_replace: '+str(reac_replace))
     #TO TEST MERGE: TO REMOVE
     #rpsbml_gem.modelName = 'test'
     #rpsbml_gem.writeSBML('/home/mdulac/workspace/Galaxy-SynBioCAD/rpFBA/rpFBA_image/tmp_out/')
@@ -246,7 +248,7 @@ def singleFBA_hdd(file_name,
             reacFBA = rpfba.rpsbml.model.getReaction(member.getIdRef())
             logging.debug(reacFBA)
             try:
-                reacIN = rpsbml.model.getReaction(rev_reactions_convert[member.getIdRef()])
+                reacIN = rpsbml.model.getReaction(reac_replace[member.getIdRef()])
             except KeyError:
                 reacIN = rpsbml.model.getReaction(member.getIdRef())
             logging.debug(reacIN)
