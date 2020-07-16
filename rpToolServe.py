@@ -486,8 +486,17 @@ def main(input_path,
     with tempfile.TemporaryDirectory() as tmpInputFolder:
         inchikey_enriched_gem_sbml = os.path.join(tmpInputFolder, 'tmp.sbml')
         inchikeyMIRIAM.main(gem_sbml, inchikey_enriched_gem_sbml) 
+        ##### count the number of files that are within the files ####
+        num_models = 0
+        with tempfile.TemporaryDirectory() as tmpCountFolder:
+            tar = tarfile.open(input_path, mode='r')
+            tar.extractall(path=tmpCountFolder)
+            num_models = len(glob.glob(tmpCountFolder+'/*'))
+            tar.close() 
+        if num_models==0:
+            logging.warning('The input tar file seems to be empty')
         #outputTar_obj = io.BytesIO()
-        if num_workers==1:
+        if num_workers==1 or num_models==1:
             runFBA_hdd(input_path,
                        inchikey_enriched_gem_sbml,
                        output_path,
