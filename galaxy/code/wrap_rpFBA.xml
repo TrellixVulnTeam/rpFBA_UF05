@@ -1,7 +1,7 @@
 <tool id="rpFBA" name="FBA" version="0.1">
 	<description>Perform FBA for the RetroPath2.0 heterologous pathways</description>
   <requirements>
-    <container type="docker">brsynth/rpfba-standalone</container>
+    <container type="docker">brsynth/rpfba-standalone:v1</container>
   </requirements>
   <stdio>
     <regex match="WARNING" level="warning" />

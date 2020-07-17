@@ -36,7 +36,7 @@ if __name__ == "__main__":
     parser.add_argument('-target_reaction', type=str, default='RP1_sink')
     parser.add_argument('-source_coefficient', type=float, default=1.0)
     parser.add_argument('-target_coefficient', type=float, default=1.0)
-    parser.add_argument('-num_workers', type=int, default=10)
+    parser.add_argument('-num_workers', type=int, default=1)
     parser.add_argument('-is_max', type=str, default='True')
     parser.add_argument('-fraction_of', type=float, default=0.75)
     parser.add_argument('-dont_merge', type=str, default='True')
