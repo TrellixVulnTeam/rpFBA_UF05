@@ -1,5 +1,7 @@
 __pycache__/
+rpMerge.py
 tool_rpFBA.py
+*.swp
 rpSBML.py
 OLD/
 tmp/
