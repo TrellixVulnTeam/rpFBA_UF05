@@ -34,7 +34,7 @@ Advanced options:
 ## Building the docker
 
 ```
-docker build -t brsynth/rpfba-standalone -f Dockerfile .
+docker build -t brsynth/rpfba-standalone:v2 -f Dockerfile .
 ```
 
 ## Running the tests

@@ -36,7 +36,7 @@ def main(inputfile,
          fraction_of=0.75,
          dont_merge=True):
     docker_client = docker.from_env()
-    image_str = 'brsynth/rpfba-standalone'
+    image_str = 'brsynth/rpfba-standalone:v2'
     try:
         image = docker_client.images.get(image_str)
     except docker.errors.ImageNotFound:
