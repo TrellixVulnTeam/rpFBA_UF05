@@ -25,8 +25,8 @@ import rpMerge
 
 logging.basicConfig(
     #level=logging.DEBUG,
-    #level=logging.WARNING,
-    level=logging.ERROR,
+    level=logging.WARNING,
+    #level=logging.ERROR,
     format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
     datefmt='%d-%m-%Y %H:%M:%S',
 )
@@ -215,6 +215,12 @@ def singleFBA_hdd(file_name,
     #rpsbml.mergeModels(rpsbml_gem, species_group_id, sink_species_group_id)
     rpmerge = rpMerge.rpMerge()
     species_source_target, reactions_convert = rpmerge.mergeModels(rpsbml, rpsbml_gem)
+    #NOTE: reactions_convert is organised with key being the rpsbml reaction and value being the rpsbml_gem value`
+    #BUG: when merging the RP1_sink (very rare cases) can be recognised if another reaction contains the same species as a reactant
+    ## under such as scenario the algorithm will consider that they are the same -- TODO: overwrite it
+    if target_reaction in reactions_convert:
+        logging.warning('The target_reaction ('+str(target_reaction)+') has been detected in model '+str(file_name)+', ignoring this model...')
+        return False
     rev_reactions_convert = {v: k for k, v in reactions_convert.items()}
     logging.debug('species_source_target: '+str(species_source_target))
     logging.debug('reactions_convert: '+str(reactions_convert))
@@ -325,6 +331,7 @@ def singleFBA_hdd(file_name,
     else:
         logging.debug('Returning the full model')
         rpfba.rpsbml.writeSBML(tmpOutputFolder)
+    return True
 
 
 ##
@@ -419,6 +426,9 @@ def runFBA_multi(inputTar,
                  fill_orphan_species=False,
                  species_group_id='central_species',
                  sink_species_group_id='rp_sink_species'):
+    """
+    Subprocess implementation of the rpFBA code, 
+    """
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
             tar = tarfile.open(inputTar, mode='r')

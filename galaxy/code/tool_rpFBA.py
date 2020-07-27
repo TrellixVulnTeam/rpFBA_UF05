@@ -8,6 +8,7 @@ Created on September 21 2019
 """
 import argparse
 import sys
+import shutil
 import logging
 import tempfile
 import tarfile
