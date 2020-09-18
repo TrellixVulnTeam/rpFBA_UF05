@@ -158,7 +158,7 @@ class rpFBA:
             return 0.0, False
         cobra_results = self.cobraModel.optimize()
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
-        return cobra_re`sults.objective_value, True
+        return cobra_results.objective_value, True
 
 
     ##
