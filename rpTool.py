@@ -245,8 +245,8 @@ class rpFBA:
         cobra_results = self.cobraModel.optimize()
         self.writeAnalysisResults(objective_id, cobra_results, pathway_id)
         ##### print the biomass results ######
-        self.logger.debug('Biomass: '+str(cobra_results.fluxes.biomass))
-        self.logger.debug('Target: '+str(cobra_results.fluxes.RP1_sink))
+        #self.logger.debug('Biomass: '+str(cobra_results.fluxes.biomass))
+        #self.logger.debug('Target: '+str(cobra_results.fluxes.RP1_sink))
         #reset the bounds to the original values for the target
         old_upper_bound, old_lower_bound = self.rpsbml.setReactionConstraints(source_reaction,
                                                                               old_upper_bound,
