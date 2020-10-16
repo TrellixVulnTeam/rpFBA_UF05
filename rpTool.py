@@ -26,13 +26,22 @@ class rpFBA:
     ##########################################################
 
 
-    ## Check the libSBML calls
-    #
-    # Check that the libSBML python calls do not return error INT and if so, display the error. Taken from: http://sbml.org/Software/libSBML/docs/python-api/create_simple_model_8py-example.html
-    #
-    # @param value The SBML call
-    # @param message The string that describes the call
     def _checklibSBML(self, value, message):
+        """Private function that checks the libSBML calls.
+
+        Check that the libSBML python calls do not return error INT and if so, display the error. Taken from: http://sbml.org/Software/libSBML/docs/python-api/create_simple_model_8py-example.html
+
+        :param value: The libSBML command returned int
+        :param message: The string that describes the call
+
+        :type value: int
+        :type message: str
+
+        :raises AttributeError: If the libSBML command encounters an error or the input value is None
+
+        :return: None
+        :rtype: None
+        """
         if value is None:
             self.logger.error('LibSBML returned a null value trying to ' + message + '.')
             raise AttributeError
@@ -49,10 +58,12 @@ class rpFBA:
             return None
 
 
-    ## Pass the libSBML file to Cobra
-    #
-    #
     def _convertToCobra(self):
+        """Convert the rpSBML object to cobra object
+
+        :return: Success or failure of the function
+        :rtype: bool
+        """
         try:
             with tempfile.TemporaryDirectory() as tmpOutputFolder:
                 self.rpsbml.writeSBML(tmpOutputFolder)
@@ -74,10 +85,21 @@ class rpFBA:
     ##########################################################
 
 
-    ## Method to harcode into BRSynth annotations the results of a COBRA analysis
-    # #TODO: move this to rpSBML
-    #
+    #TODO: move this to rpSBML
     def writeAnalysisResults(self, objective_id, cobra_results, pathway_id='rp_pathway'):
+        """Method to harcode into BRSynth annotations the results of a COBRA analysis
+
+        :param objective_id: The id of the objective to optimise
+        :param cobra_results: The cobrapy results object 
+        :param pathway_id: The id of the heterologous pathway group
+    
+        :type cobra_results: cobra.ModelSummary
+        :type objective_id: str
+        :type pathway_id: str
+    
+        :return: None
+        :rtype: None
+        """
         self.logger.debug('----- Setting the results for '+str(objective_id)+ ' -----')
         groups = self.rpsbml.model.getPlugin('groups')
         self._checklibSBML(groups, 'Getting groups plugin')
