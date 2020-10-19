@@ -3,7 +3,7 @@
 Created on September 21 2019
 
 @author: Melchior du Lac
-@description: Extract the sink from an SBML into RP2 friendly format
+@description: Call the rpFBA docker
 
 """
 import argparse
@@ -35,6 +35,49 @@ def main(inputfile,
          is_max=True,
          fraction_of=0.75,
          dont_merge=True):
+    """Single rpSBML simulation
+
+    :param inputfile: Path to the input file
+    :param input_format: Input file format. Valid inputs are: tar, sbml
+    :param gem_sbml: Path to the GEM file
+    :param output: The path to the output file. Note that it will be the file type defined as input_format
+    :param pathway_id: The id of the heterologous pathway (Default: rp_pathway)
+    :param species_group_id: The id of the central species (Default: central_species)
+    :param sink_species_group_id: The id of the sink species (Default: rp_sink_species)
+    :param objective_id: Overwrite the auto-generated id of the results (Default: None)
+    :param compartment_id: The SBML compartment id (Default: MNXC3)
+    :param sim_type: The type of simulation to use. Available simulation types include: fraction, fba, rpfba
+    :param source_reaction: The reaction id of the source reaction.
+    :param target_reaction: The reaction id of the target reaction. Note that if fba or rpfba options are used, then these are ignored
+    :param source_coefficient: The source coefficient
+    :param target_coefficient: The target coefficient
+    :param num_workers: Number of multiprocessors workers
+    :param is_max: Maximise or minimise the objective
+    :param fraction_of: The fraction of the optimum. Note that this value is ignored is fba is used
+    :param dont_merge: Output the merged model (Default: True)
+
+    :type inputfile: str 
+    :type input_format: str 
+    :type gem_sbml: str
+    :type output: str 
+    :type pathway_id: str
+    :type species_group_id: str
+    :type sink_species_group_id: str
+    :type objective_id: str
+    :type compartment_id: str
+    :type sim_type: str
+    :type source_reaction: str
+    :type target_reaction: str
+    :type source_coefficient: float
+    :type target_coefficient: float
+    :type num_workers: int
+    :type is_max: bool
+    :type fraction_of: float
+    :type dont_merge: bool
+
+    :return: None
+    :rtype: None
+    """
     docker_client = docker.from_env()
     image_str = 'brsynth/rpfba-standalone:v2'
     try:

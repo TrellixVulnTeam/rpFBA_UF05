@@ -7,12 +7,17 @@ import glob
 import logging
 
 
-## Class to simulate an rpsbml object using different FBA types and objective functions
-#
-# At this point we want to have the BIOMASS, target and shared objective
 #TODO: add the pareto frontier optimisation as an automatic way to calculate the optimal fluxes
 class rpFBA:
+    """Class to simulate an rpsbml object using different FBA types and objective functions
+    """
     def __init__(self, rpsbml):
+        """Default constructor
+
+        :param rpsbml: The rpSBML object
+
+        :type rpsbml: rpSBML
+        """
         self.logger = logging.getLogger(__name__)
         self.logger.debug('Started instance of rpFBA')
         self.rpsbml = rpsbml
@@ -91,7 +96,7 @@ class rpFBA:
 
         :param objective_id: The id of the objective to optimise
         :param cobra_results: The cobrapy results object 
-        :param pathway_id: The id of the heterologous pathway group
+        :param pathway_id: The id of the heterologous pathway group (Default: rp_pathway)
     
         :type cobra_results: cobra.ModelSummary
         :type objective_id: str
@@ -144,15 +149,29 @@ class rpFBA:
     ##################################################################
 
 
-    ## set Bi-objective 
-    #
-    #
     def runMultiObjective(self,
                           reactions,
                           coefficients,
                           is_max=True,
                           pathway_id='rp_pathway',
                           objective_id=None):
+        """Run FBA using multiple objectives
+
+        :param reactions: The ids of the reactions involved in the objective
+        :param coefficients: The coefficients associated with the reactions id
+        :param is_max: Maximise or minimise the objective (Default: True)
+        :param pathway_id: The id of the heterologous pathway (Default: rp_pathway)
+        :param objective_id: Overwrite the default id (Default: None)
+    
+        :type reactions: list
+        :type coefficients: list
+        :type is_max: bool
+        :type pathway_id: str
+        :type objective_id: str
+    
+        :return: Success or failure of the function
+        :rtype: bool
+        """
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
         objective_id = self.rpsbml.findCreateObjective(reactions, coefficients, is_max)
@@ -165,11 +184,24 @@ class rpFBA:
         return True
 
 
-
-    ##
-    #
-    #
     def runFBA(self, reaction_id, coefficient=1.0, is_max=True, pathway_id='rp_pathway', objective_id=None):
+        """Run FBA using a single objective
+
+        :param reaction_id: The id of the reactions involved in the objective
+        :param coefficient: The coefficient associated with the reactions id (Default: 1.0)
+        :param is_max: Maximise or minimise the objective (Default: True)
+        :param pathway_id: The id of the heterologous pathway (Default: rp_pathway)
+        :param objective_id: Overwrite the default id (Default: None)
+    
+        :type reaction_id: str
+        :type coefficient: float
+        :type is_max: bool
+        :type pathway_id: str
+        :type objective_id: str
+    
+        :return: Tuple with the results of the FBA and boolean indicating the success or failure of the function
+        :rtype: tuple
+        """
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
         objective_id = self.rpsbml.findCreateObjective([reaction_id], [coefficient], is_max, objective_id)
@@ -183,10 +215,26 @@ class rpFBA:
         return cobra_results.objective_value, True
 
 
-    ##
-    #
-    #
     def runParsimoniousFBA(self, reaction_id, coefficient=1.0, fraction_of_optimum=0.95, is_max=True, pathway_id='rp_pathway', objective_id=None):
+        """Run parsimonious FBA using a single objective
+
+        :param reaction_id: The id of the reactions involved in the objective
+        :param coefficient: The coefficient associated with the reactions id (Default: 1.0)
+        :param fraction_of_optimum: Between 0.0 and 1.0 determining the fraction of optimum (Default: 0.95)
+        :param is_max: Maximise or minimise the objective (Default: True)
+        :param pathway_id: The id of the heterologous pathway (Default: rp_pathway)
+        :param objective_id: Overwrite the default id (Default: None)
+    
+        :type reaction_id: str
+        :type coefficient: float
+        :type fraction_of_optimum: float
+        :type is_max: bool
+        :type pathway_id: str
+        :type objective_id: str
+
+        :return: Tuple with the results of the FBA and boolean indicating the success or failure of the function
+        :rtype: tuple
+        """
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')
         objective_id = self.rpsbml.findCreateObjective([reaction_id], [coefficient], is_max, objective_id)
@@ -200,9 +248,6 @@ class rpFBA:
         return cobra_results.objective_value, True
 
 
-    ## Optimise for a target reaction while fixing a source reaction to the fraction of its optimum
-    #
-    #
     def runFractionReaction(self, 
                             source_reaction, 
                             source_coefficient, 
@@ -212,6 +257,29 @@ class rpFBA:
                             is_max=True, 
                             pathway_id='rp_pathway', 
                             objective_id=None):
+        """Optimise for a target reaction while fixing a source reaction to the fraction of its optimum
+
+        :param source_reaction: The id of the source reaction
+        :param source_coefficient: The source coefficient associated with the source reaction id
+        :param target_reaction: The id of the target reaction
+        :param target_coefficient: The source coefficient associated with the target reaction id
+        :param fraction_of_optimum: Between 0.0 and 1.0 determining the fraction of optimum (Default: 0.75)
+        :param is_max: Maximise or minimise the objective (Default: True)
+        :param pathway_id: The id of the heterologous pathway (Default: rp_pathway)
+        :param objective_id: Overwrite the default id (Default: None)
+    
+        :type source_reaction: str
+        :type source_coefficient: float
+        :type target_reaction: str
+        :type target_coefficient: float
+        :type fraction_of_optimum: float
+        :type is_max: bool
+        :type pathway_id: str
+        :type objective_id: str
+
+        :return: Tuple with the results of the FBA and boolean indicating the success or failure of the function
+        :rtype: tuple
+        """
         #retreive the biomass objective and flux results and set as maxima
         fbc_plugin = self.rpsbml.model.getPlugin('fbc')
         self._checklibSBML(fbc_plugin, 'Getting FBC package')

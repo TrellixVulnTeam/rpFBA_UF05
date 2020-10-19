@@ -43,10 +43,9 @@ import signal
 from functools import wraps
 from multiprocessing import Process, Queue
 
-'''
-This is to deal with an error caused by Cobrapy segmentation fault
-'''
 def handler(signum, frame):
+    """This is to deal with an error caused by Cobrapy segmentation fault
+    """
     raise OSError('CobraPy is throwing a segmentation fault')
 
 
@@ -55,12 +54,12 @@ class Sentinel:
 
 
 def processify(func):
-    '''Decorator to run a function as a process.
+    """Decorator to run a function as a process.
     Be sure that every argument and the return value
     is *pickable*.
     The created process is joined, so the code does not
     run in parallel.
-    '''
+    """
 
     def process_generator_func(q, *args, **kwargs):
         result = None
@@ -159,6 +158,8 @@ import time
 
 
 class NoDaemonProcess(multiprocessing.Process):
+    """Daemon process class
+    """
     # make 'daemon' attribute always return False
     def _get_daemon(self):
         return False
@@ -166,18 +167,17 @@ class NoDaemonProcess(multiprocessing.Process):
         pass
     daemon = property(_get_daemon, _set_daemon)
 
-# We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool
-# because the latter is only a wrapper function, not a proper class.
+
 class nonDeamonicPool(multiprocessing.pool.Pool):
+    """We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool because the latter is only a wrapper function, not a proper class.
+    """
     Process = NoDaemonProcess
 
 
 ####################### use HDD ############################
 
 
-##
-#
-#singleFBA_hdd
+#TODO: do not use the species_group_id and the sink_species_group_id. Loop through all the groups (and if the same) and overwrite the annotation instead
 @processify
 def singleFBA_hdd(file_name,
                   sbml_path,
@@ -197,6 +197,49 @@ def singleFBA_hdd(file_name,
                   fill_orphan_species=False,
                   species_group_id='central_species',
                   sink_species_group_id='rp_sink_species'):
+    """Single rpSBML simulation
+
+    :param file_name: The name of the model
+    :param sbml_path: Path to the rpSBML file
+    :param gem_sbml: Path to the GEM file
+    :param sim_type: The type of simulation to use. Available simulation types include: fraction, fba, rpfba
+    :param source_reaction: The reaction id of the source reaction.
+    :param target_reaction: The reaction id of the target reaction. Note that if fba or rpfba options are used, then these are ignored
+    :param source_coefficient: The source coefficient
+    :param target_coefficient: The target coefficient
+    :param is_max: Maximise or minimise the objective
+    :param fraction_of: The fraction of the optimum. Note that this value is ignored is fba is used
+    :param tmpOutputFolder: The path to the output document
+    :param dont_merge: Output the merged model (Default: True)
+    :param pathway_id: The id of the heterologous pathway (Default: rp_pathway)
+    :param objective_id: Overwrite the auto-generated id of the results (Default: None)
+    :param compartment_id: The SBML compartment id (Default: MNXC3)
+    :param fill_orphan_species: Add pseudo reactions that consume/produce single parent species. Note in development
+    :param species_group_id: The id of the central species (Default: central_species)
+    :param sink_species_group_id: The id of the sink species (Default: rp_sink_species)
+
+    :type inputTar: str 
+    :type gem_sbml: str
+    :type sim_type: str
+    :type source_reaction: str
+    :type target_reaction: str
+    :type source_coefficient: float
+    :type target_coefficient: float
+    :type is_max: bool
+    :type fraction_of: float
+    :type tmpOutputFolder: str
+    :type dont_merge: bool
+    :type num_workers: int
+    :type pathway_id: str
+    :type objective_id: str
+    :type compartment_id: str
+    :type fill_orphan_species: bool
+    :type species_group_id: str
+    :type sink_species_group_id: str
+
+    :return: Succcess or failure of the function
+    :rtype: bool
+    """
     logging.debug('--------- '+str(file_name)+' ------------')
     rpsbml = rpSBML.rpSBML(file_name, path=sbml_path)
     #Save the central species
@@ -354,6 +397,49 @@ def runFBA_hdd(inputTar,
                fill_orphan_species=False,
                species_group_id='central_species',
                sink_species_group_id='rp_sink_species'):
+    """Subprocess implementation of rpFBA
+
+    :param inputTar: Path of the TAR rpSBML files
+    :param gem_sbml: Path to the GEM file
+    :param outputTar: Path of the TAR output
+    :param sim_type: The type of simulation to use. Available simulation types include: fraction, fba, rpfba
+    :param source_reaction: The reaction id of the source reaction.
+    :param target_reaction: The reaction id of the target reaction. Note that if fba or rpfba options are used, then these are ignored
+    :param source_coefficient: The source coefficient
+    :param target_coefficient: The target coefficient
+    :param is_max: Maximise or minimise the objective
+    :param fraction_of: The fraction of the optimum. Note that this value is ignored is fba is used
+    :param dont_merge: Output the merged model (Default: True)
+    :param num_workers: The number of processes to use (Default: 10)
+    :param pathway_id: The id of the heterologous pathway (Default: rp_pathway)
+    :param objective_id: Overwrite the auto-generated id of the results (Default: None)
+    :param compartment_id: The SBML compartment id (Default: MNXC3)
+    :param fill_orphan_species: Add pseudo reactions that consume/produce single parent species. Note in development
+    :param species_group_id: The id of the central species (Default: central_species)
+    :param sink_species_group_id: The id of the sink species (Default: rp_sink_species)
+
+    :type inputTar: str 
+    :type gem_sbml: str
+    :type outputTar: str 
+    :type sim_type: str
+    :type source_reaction: str
+    :type target_reaction: str
+    :type source_coefficient: float
+    :type target_coefficient: float
+    :type is_max: bool
+    :type fraction_of: float
+    :type dont_merge: bool
+    :type num_workers: int
+    :type pathway_id: str
+    :type objective_id: str
+    :type compartment_id: str
+    :type fill_orphan_species: bool
+    :type species_group_id: str
+    :type sink_species_group_id: str
+
+    :return: Succcess or failure of the function
+    :rtype: bool
+    """
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
             tar = tarfile.open(inputTar, mode='r')
@@ -426,8 +512,48 @@ def runFBA_multi(inputTar,
                  fill_orphan_species=False,
                  species_group_id='central_species',
                  sink_species_group_id='rp_sink_species'):
-    """
-    Subprocess implementation of the rpFBA code, 
+    """Subprocess implementation of rpFBA
+
+    :param inputTar: Path of the TAR rpSBML files
+    :param gem_sbml: Path to the GEM file
+    :param outputTar: Path of the TAR output
+    :param sim_type: The type of simulation to use. Available simulation types include: fraction, fba, rpfba
+    :param source_reaction: The reaction id of the source reaction.
+    :param target_reaction: The reaction id of the target reaction. Note that if fba or rpfba options are used, then these are ignored
+    :param source_coefficient: The source coefficient
+    :param target_coefficient: The target coefficient
+    :param is_max: Maximise or minimise the objective
+    :param fraction_of: The fraction of the optimum. Note that this value is ignored is fba is used
+    :param dont_merge: Output the merged model (Default: True)
+    :param num_workers: The number of processes to use (Default: 10)
+    :param pathway_id: The id of the heterologous pathway (Default: rp_pathway)
+    :param objective_id: Overwrite the auto-generated id of the results (Default: None)
+    :param compartment_id: The SBML compartment id (Default: MNXC3)
+    :param fill_orphan_species: Add pseudo reactions that consume/produce single parent species. Note in development
+    :param species_group_id: The id of the central species (Default: central_species)
+    :param sink_species_group_id: The id of the sink species (Default: rp_sink_species)
+
+    :type inputTar: str 
+    :type gem_sbml: str
+    :type outputTar: str 
+    :type sim_type: str
+    :type source_reaction: str
+    :type target_reaction: str
+    :type source_coefficient: float
+    :type target_coefficient: float
+    :type is_max: bool
+    :type fraction_of: float
+    :type dont_merge: bool
+    :type num_workers: int
+    :type pathway_id: str
+    :type objective_id: str
+    :type compartment_id: str
+    :type fill_orphan_species: bool
+    :type species_group_id: str
+    :type sink_species_group_id: str
+
+    :return: Succcess or failure of the function
+    :rtype: bool
     """
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
         with tempfile.TemporaryDirectory() as tmpInputFolder:
@@ -475,11 +601,6 @@ def runFBA_multi(inputTar,
     return True
 
 
-
-
-##
-#
-#
 def main(input_path,
          gem_sbml,
          output_path,
@@ -498,6 +619,49 @@ def main(input_path,
          fill_orphan_species=None,
          species_group_id='central_species',
          sink_species_group_id='rp_sink_species'):
+    """Run rpFBA on a collection of rpSBML files
+
+    :param input_path: Path of the TAR rpSBML files
+    :param gem_sbml: Path to the GEM file
+    :param output_path: Path of the TAR rpSBML output files
+    :param sim_type: The type of simulation to use. Available simulation types include: fraction, fba, rpfba
+    :param source_reaction: The reaction id of the source reaction.
+    :param target_reaction: The reaction id of the target reaction. Note that if fba or rpfba options are used, then these are ignored
+    :param source_coefficient: The source coefficient
+    :param target_coefficient: The target coefficient
+    :param is_max: Maximise or minimise the objective
+    :param fraction_of: The fraction of the optimum. Note that this value is ignored is fba is used
+    :param dont_merge: Output the merged model (Default: True)
+    :param num_workers: The number of processes to use (Default: 10)
+    :param pathway_id: The id of the heterologous pathway (Default: rp_pathway)
+    :param objective_id: Overwrite the auto-generated id of the results (Default: None)
+    :param compartment_id: The SBML compartment id (Default: MNXC3)
+    :param fill_orphan_species: Add pseudo reactions that consume/produce single parent species. Note in development
+    :param species_group_id: The id of the central species (Default: central_species)
+    :param sink_species_group_id: The id of the sink species (Default: rp_sink_species)
+
+    :type input_path: str 
+    :type gem_sbml: str
+    :type output_path: str 
+    :type sim_type: str
+    :type source_reaction: str
+    :type target_reaction: str
+    :type source_coefficient: float
+    :type target_coefficient: float
+    :type is_max: bool
+    :type fraction_of: float
+    :type dont_merge: bool
+    :type num_workers: int
+    :type pathway_id: str
+    :type objective_id: str
+    :type compartment_id: str
+    :type fill_orphan_species: bool
+    :type species_group_id: str
+    :type sink_species_group_id: str
+
+    :return: Succcess or failure of the function
+    :rtype: bool
+    """
     with tempfile.TemporaryDirectory() as tmpInputFolder:
         inchikey_enriched_gem_sbml = os.path.join(tmpInputFolder, 'tmp.sbml')
         inchikeyMIRIAM.main(gem_sbml, inchikey_enriched_gem_sbml) 

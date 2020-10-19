@@ -30,6 +30,7 @@ Advanced options:
 ## Dependencies
 
 * Base docker image: [brsynth/rpBase](https://hub.docker.com/r/brsynth/rpbase)
+* Cache docker image: [brsynth/rpCache](https://hub.docker.com/r/brsynth/rpcache)
 
 ## Building the docker
 

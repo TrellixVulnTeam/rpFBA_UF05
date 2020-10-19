@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>rpFBA’s documentation! &#8212; rpFBA v0.2 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="rpfba-s-documentation">
+<h1>rpFBA’s documentation!<a class="headerlink" href="#rpfba-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>Welcome to the documentation of rpFBA. The project uses the <a class="reference external" href="https://github.com/Galaxy-SynBioCAD/rpBase">rpBase</a> project to merge a rpSBML file and a SBML files to simulate FBA using <a class="reference external" href="https://opencobra.github.io/cobrapy/">CobraPy</a>. The project supports the “fraction of reaction”, standard FBA and parsimonious FBA.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>First build the <a class="reference external" href="https://github.com/Galaxy-SynBioCAD/rpBase">rpBase</a> and <a class="reference external" href="https://github.com/Galaxy-SynBioCAD/rpCache">rpCache</a> dockers before building the local docker:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker build -t brsynth/rpfba-standalone:v2 -f Dockerfile .
+</pre></div>
+</div>
+<p>To call the docker locally you can use the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python run.py -input /path/to/file -input_format tar -gem_sbml /path/to/file -output /path/to/output
+</pre></div>
+</div>
+</div>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<dl class="py class">
+<dt id="rpTool.rpFBA">
+<em class="property">class </em><code class="sig-prename descclassname">rpTool.</code><code class="sig-name descname">rpFBA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rpsbml</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rpTool.rpFBA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class to simulate an rpsbml object using different FBA types and objective functions</p>
+<dl class="py method">
+<dt id="rpTool.rpFBA.runFBA">
+<code class="sig-name descname">runFBA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">reaction_id</span></em>, <em class="sig-param"><span class="n">coefficient</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">is_max</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">pathway_id</span><span class="o">=</span><span class="default_value">'rp_pathway'</span></em>, <em class="sig-param"><span class="n">objective_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rpTool.rpFBA.runFBA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run FBA using a single objective</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reaction_id</strong> (<em>str</em>) – The id of the reactions involved in the objective</p></li>
+<li><p><strong>coefficient</strong> (<em>float</em>) – The coefficient associated with the reactions id (Default: 1.0)</p></li>
+<li><p><strong>is_max</strong> (<em>bool</em>) – Maximise or minimise the objective (Default: True)</p></li>
+<li><p><strong>pathway_id</strong> (<em>str</em>) – The id of the heterologous pathway (Default: rp_pathway)</p></li>
+<li><p><strong>objective_id</strong> (<em>str</em>) – Overwrite the default id (Default: None)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple with the results of the FBA and boolean indicating the success or failure of the function</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rpTool.rpFBA.runFractionReaction">
+<code class="sig-name descname">runFractionReaction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">source_reaction</span></em>, <em class="sig-param"><span class="n">source_coefficient</span></em>, <em class="sig-param"><span class="n">target_reaction</span></em>, <em class="sig-param"><span class="n">target_coefficient</span></em>, <em class="sig-param"><span class="n">fraction_of_source</span><span class="o">=</span><span class="default_value">0.75</span></em>, <em class="sig-param"><span class="n">is_max</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">pathway_id</span><span class="o">=</span><span class="default_value">'rp_pathway'</span></em>, <em class="sig-param"><span class="n">objective_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rpTool.rpFBA.runFractionReaction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optimise for a target reaction while fixing a source reaction to the fraction of its optimum</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source_reaction</strong> (<em>str</em>) – The id of the source reaction</p></li>
+<li><p><strong>source_coefficient</strong> (<em>float</em>) – The source coefficient associated with the source reaction id</p></li>
+<li><p><strong>target_reaction</strong> (<em>str</em>) – The id of the target reaction</p></li>
+<li><p><strong>target_coefficient</strong> (<em>float</em>) – The source coefficient associated with the target reaction id</p></li>
+<li><p><strong>fraction_of_optimum</strong> (<em>float</em>) – Between 0.0 and 1.0 determining the fraction of optimum (Default: 0.75)</p></li>
+<li><p><strong>is_max</strong> (<em>bool</em>) – Maximise or minimise the objective (Default: True)</p></li>
+<li><p><strong>pathway_id</strong> (<em>str</em>) – The id of the heterologous pathway (Default: rp_pathway)</p></li>
+<li><p><strong>objective_id</strong> (<em>str</em>) – Overwrite the default id (Default: None)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple with the results of the FBA and boolean indicating the success or failure of the function</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rpTool.rpFBA.runMultiObjective">
+<code class="sig-name descname">runMultiObjective</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">reactions</span></em>, <em class="sig-param"><span class="n">coefficients</span></em>, <em class="sig-param"><span class="n">is_max</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">pathway_id</span><span class="o">=</span><span class="default_value">'rp_pathway'</span></em>, <em class="sig-param"><span class="n">objective_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rpTool.rpFBA.runMultiObjective" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run FBA using multiple objectives</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reactions</strong> (<em>list</em>) – The ids of the reactions involved in the objective</p></li>
+<li><p><strong>coefficients</strong> (<em>list</em>) – The coefficients associated with the reactions id</p></li>
+<li><p><strong>is_max</strong> (<em>bool</em>) – Maximise or minimise the objective (Default: True)</p></li>
+<li><p><strong>pathway_id</strong> (<em>str</em>) – The id of the heterologous pathway (Default: rp_pathway)</p></li>
+<li><p><strong>objective_id</strong> (<em>str</em>) – Overwrite the default id (Default: None)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Success or failure of the function</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rpTool.rpFBA.runParsimoniousFBA">
+<code class="sig-name descname">runParsimoniousFBA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">reaction_id</span></em>, <em class="sig-param"><span class="n">coefficient</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">fraction_of_optimum</span><span class="o">=</span><span class="default_value">0.95</span></em>, <em class="sig-param"><span class="n">is_max</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">pathway_id</span><span class="o">=</span><span class="default_value">'rp_pathway'</span></em>, <em class="sig-param"><span class="n">objective_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rpTool.rpFBA.runParsimoniousFBA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run parsimonious FBA using a single objective</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reaction_id</strong> (<em>str</em>) – The id of the reactions involved in the objective</p></li>
+<li><p><strong>coefficient</strong> (<em>float</em>) – The coefficient associated with the reactions id (Default: 1.0)</p></li>
+<li><p><strong>fraction_of_optimum</strong> (<em>float</em>) – Between 0.0 and 1.0 determining the fraction of optimum (Default: 0.95)</p></li>
+<li><p><strong>is_max</strong> (<em>bool</em>) – Maximise or minimise the objective (Default: True)</p></li>
+<li><p><strong>pathway_id</strong> (<em>str</em>) – The id of the heterologous pathway (Default: rp_pathway)</p></li>
+<li><p><strong>objective_id</strong> (<em>str</em>) – Overwrite the default id (Default: None)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple with the results of the FBA and boolean indicating the success or failure of the function</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rpTool.rpFBA.writeAnalysisResults">
+<code class="sig-name descname">writeAnalysisResults</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective_id</span></em>, <em class="sig-param"><span class="n">cobra_results</span></em>, <em class="sig-param"><span class="n">pathway_id</span><span class="o">=</span><span class="default_value">'rp_pathway'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rpTool.rpFBA.writeAnalysisResults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to harcode into BRSynth annotations the results of a COBRA analysis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>objective_id</strong> (<em>str</em>) – The id of the objective to optimise</p></li>
+<li><p><strong>cobra_results</strong> (<em>cobra.ModelSummary</em>) – The cobrapy results object</p></li>
+<li><p><strong>pathway_id</strong> (<em>str</em>) – The id of the heterologous pathway group (Default: rp_pathway)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="run.main">
+<em class="property">class </em><code class="sig-prename descclassname">run.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">inputfile</span></em>, <em class="sig-param"><span class="n">input_format</span></em>, <em class="sig-param"><span class="n">gem_sbml</span></em>, <em class="sig-param"><span class="n">output</span></em>, <em class="sig-param"><span class="n">pathway_id</span><span class="o">=</span><span class="default_value">'rp_pathway'</span></em>, <em class="sig-param"><span class="n">species_group_id</span><span class="o">=</span><span class="default_value">'central_species'</span></em>, <em class="sig-param"><span class="n">sink_species_group_id</span><span class="o">=</span><span class="default_value">'rp_sink_species'</span></em>, <em class="sig-param"><span class="n">objective_id</span><span class="o">=</span><span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">compartment_id</span><span class="o">=</span><span class="default_value">'MNXC3'</span></em>, <em class="sig-param"><span class="n">sim_type</span><span class="o">=</span><span class="default_value">'fraction'</span></em>, <em class="sig-param"><span class="n">source_reaction</span><span class="o">=</span><span class="default_value">'biomass'</span></em>, <em class="sig-param"><span class="n">target_reaction</span><span class="o">=</span><span class="default_value">'RP1_sink'</span></em>, <em class="sig-param"><span class="n">source_coefficient</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">target_coefficient</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">is_max</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">fraction_of</span><span class="o">=</span><span class="default_value">0.75</span></em>, <em class="sig-param"><span class="n">dont_merge</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#run.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Single rpSBML simulation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inputfile</strong> (<em>str</em>) – Path to the input file</p></li>
+<li><p><strong>input_format</strong> (<em>str</em>) – Input file format. Valid inputs are: tar, sbml</p></li>
+<li><p><strong>gem_sbml</strong> (<em>str</em>) – Path to the GEM file</p></li>
+<li><p><strong>output</strong> (<em>str</em>) – The path to the output file. Note that it will be the file type defined as input_format</p></li>
+<li><p><strong>pathway_id</strong> (<em>str</em>) – The id of the heterologous pathway (Default: rp_pathway)</p></li>
+<li><p><strong>species_group_id</strong> (<em>str</em>) – The id of the central species (Default: central_species)</p></li>
+<li><p><strong>sink_species_group_id</strong> (<em>str</em>) – The id of the sink species (Default: rp_sink_species)</p></li>
+<li><p><strong>objective_id</strong> (<em>str</em>) – Overwrite the auto-generated id of the results (Default: None)</p></li>
+<li><p><strong>compartment_id</strong> (<em>str</em>) – The SBML compartment id (Default: MNXC3)</p></li>
+<li><p><strong>sim_type</strong> (<em>str</em>) – The type of simulation to use. Available simulation types include: fraction, fba, rpfba</p></li>
+<li><p><strong>source_reaction</strong> (<em>str</em>) – The reaction id of the source reaction.</p></li>
+<li><p><strong>target_reaction</strong> (<em>str</em>) – The reaction id of the target reaction. Note that if fba or rpfba options are used, then these are ignored</p></li>
+<li><p><strong>source_coefficient</strong> (<em>float</em>) – The source coefficient</p></li>
+<li><p><strong>target_coefficient</strong> (<em>float</em>) – The target coefficient</p></li>
+<li><p><strong>num_workers</strong> (<em>int</em>) – Number of multiprocessors workers</p></li>
+<li><p><strong>is_max</strong> (<em>bool</em>) – Maximise or minimise the objective</p></li>
+<li><p><strong>fraction_of</strong> (<em>float</em>) – The fraction of the optimum. Note that this value is ignored is fba is used</p></li>
+<li><p><strong>dont_merge</strong> (<em>bool</em>) – Output the merged model (Default: True)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">rpFBA</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Melchior du Lac.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
