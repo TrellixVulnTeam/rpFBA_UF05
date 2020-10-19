@@ -91,64 +91,66 @@ def main(inputfile,
             logging.error('Cannot pull image: '+str(image_str))
             exit(1)
     with tempfile.TemporaryDirectory() as tmpOutputFolder:
-        shutil.copy(inputfile, tmpOutputFolder+'/input.dat')
-        shutil.copy(gem_sbml, tmpOutputFolder+'/gem_sbml.dat')
-        command = ['/home/tool_rpFBA.py',
-                   '-input',
-                   '/home/tmp_output/input.dat',
-                   '-gem_sbml',
-                   '/home/tmp_output/gem_sbml.dat',
-                   '-sim_type',
-                   str(sim_type),
-                   '-source_reaction',
-                   str(source_reaction),
-                   '-target_reaction',
-                   str(target_reaction),
-                   '-source_coefficient',
-                   str(source_coefficient),
-                   '-target_coefficient',
-                   str(target_coefficient),
-                   '-is_max',
-                   str(is_max),
-                   '-num_workers',
-                   str(num_workers),
-                   '-fraction_of',
-                   str(fraction_of),
-                   '-dont_merge',
-                   str(dont_merge),
-                   '-pathway_id',
-                   str(pathway_id),
-                   '-objective_id',
-                   str(objective_id),
-                   '-species_group_id',
-                   str(species_group_id),
-                   '-sink_species_group_id',
-                   str(sink_species_group_id),
-                   '-output',
-                   '/home/tmp_output/output.dat',
-                   '-compartment_id',
-                   str(compartment_id),
-                   '-input_format',
-                   str(input_format)]
-        container = docker_client.containers.run(image_str, 
-                                                 command, 
-                                                 detach=True, 
-                                                 stderr=True,
-                                                 volumes={tmpOutputFolder+'/': {'bind': '/home/tmp_output', 'mode': 'rw'}})
-        container.wait()
-        err = container.logs(stdout=False, stderr=True)
-        err_str = err.decode('utf-8')
-        if not 'ERROR' in err_str:
-            if os.path.exists(tmpOutputFolder+'/output.dat'):
-                shutil.copy(tmpOutputFolder+'/output.dat', output)
+        if os.path.exists(inputfile) and os.path.exists(gem_sbml):
+            shutil.copy(inputfile, tmpOutputFolder+'/input.dat')
+            shutil.copy(gem_sbml, tmpOutputFolder+'/gem_sbml.dat')
+            command = ['/home/tool_rpFBA.py',
+                       '-input',
+                       '/home/tmp_output/input.dat',
+                       '-gem_sbml',
+                       '/home/tmp_output/gem_sbml.dat',
+                       '-sim_type',
+                       str(sim_type),
+                       '-source_reaction',
+                       str(source_reaction),
+                       '-target_reaction',
+                       str(target_reaction),
+                       '-source_coefficient',
+                       str(source_coefficient),
+                       '-target_coefficient',
+                       str(target_coefficient),
+                       '-is_max',
+                       str(is_max),
+                       '-num_workers',
+                       str(num_workers),
+                       '-fraction_of',
+                       str(fraction_of),
+                       '-dont_merge',
+                       str(dont_merge),
+                       '-pathway_id',
+                       str(pathway_id),
+                       '-objective_id',
+                       str(objective_id),
+                       '-species_group_id',
+                       str(species_group_id),
+                       '-sink_species_group_id',
+                       str(sink_species_group_id),
+                       '-output',
+                       '/home/tmp_output/output.dat',
+                       '-compartment_id',
+                       str(compartment_id),
+                       '-input_format',
+                       str(input_format)]
+            container = docker_client.containers.run(image_str, 
+                                                     command, 
+                                                     detach=True, 
+                                                     stderr=True,
+                                                     volumes={tmpOutputFolder+'/': {'bind': '/home/tmp_output', 'mode': 'rw'}})
+            container.wait()
+            err = container.logs(stdout=False, stderr=True)
+            err_str = err.decode('utf-8')
+            if 'ERROR' in err_str:
+                print(err_str)
+            elif 'WARNING' in err_str:
+                print(err_str)
+            if not os.path.exists(tmpOutputFolder+'/output.dat'):
+                print('ERROR: Cannot find the output file: '+str(tmpOutputFolder+'/output.dat'))
             else:
-                logging.error('\n'+err_str)
-                logging.error('rpFBA did not generate an output file')
+                shutil.copy(tmpOutputFolder+'/output.dat', output)
+            container.remove()
         else:
-            logging.error('\n'+err_str)
-            logging.error('rpFBA did not generate an output file')
-        container.remove()
-
+            logging.error('One or more of the input files do not seem to exist: '+str(inputfile)+' - '+str(gem_sbml))
+            exit(1)
 
 
 ##
