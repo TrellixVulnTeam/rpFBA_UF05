@@ -1,5 +1,5 @@
-rpFBA's documentation!
-======================
+rpFBA's documentation
+=====================
 
 Indices and tables
 ##################
